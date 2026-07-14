@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hero preview</title>
+  <link rel="stylesheet" href="/global.css" />
+  <style>
+    body { background: #0a0a0a; }
+    /* ?bg-only hides content, keeps the hero's gradient background */
+    body.bg-only lc-hero .inner { visibility: hidden; }
+  </style>
+  <script>
+    if (new URLSearchParams(location.search).has('bg-only')) {
+      document.addEventListener('DOMContentLoaded', () => document.body.classList.add('bg-only'));
+    }
+  </script>
+</head>
+<body>
+  <lc-hero></lc-hero>
+  <script type="module">import '/components/lc-hero.js';</script>
+</body>
+</html>

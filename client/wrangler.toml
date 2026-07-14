@@ -1,0 +1,23 @@
+name = "legal-connections-webapp"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "legal-connections"
+database_id = "04bc3219-020e-4658-8957-40971c398a9b"
+
+# Secrets are NOT set here — use `wrangler pages secret put <NAME>` so they
+# never land in version control. See docs/guides/DEPLOYING.md and
+# test/.env.example for the full list (CONTACT_EMAIL, CONTACT_SENDER_EMAIL,
+# AWS_SES_KEY, AWS_SES_SECRET, AWS_REGION).
+#
+# To set them once you have real values:
+#   wrangler pages secret put CONTACT_EMAIL
+#   wrangler pages secret put CONTACT_SENDER_EMAIL
+#   wrangler pages secret put AWS_SES_KEY
+#   wrangler pages secret put AWS_SES_SECRET
+#   wrangler pages secret put AWS_REGION
+#
+# Default sender if CONTACT_SENDER_EMAIL is unset: do-not-reply@legal-connections.com
+# (see test/.env.example and test/functions/_shared/mailer.js).
