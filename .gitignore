@@ -3,3 +3,12 @@ node_modules/
 .env
 .env.*
 .DS_Store
+
+# This repo is connected to Cloudflare Pages (root: client/) — only client/
+# is meant to be pushed. Everything else stays local-only.
+CLAUDE.md
+/docs/
+/ops/
+/planning/
+/test/
+.claude/
