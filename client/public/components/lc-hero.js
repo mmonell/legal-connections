@@ -1,6 +1,7 @@
 import { LC } from '../config.js';
 import { t, getLang, onLangChange } from '../i18n.js';
 import { floridaCities, floridaCounties } from '../data/florida.js';
+import { usStates } from '../data/usStates.js';
 
 const strings = {
   kicker: { en: 'Accident Injury Referrals', es: 'Referidos por Accidentes', pt: 'Indicações por Acidentes' },
@@ -78,6 +79,16 @@ const strings = {
       { value: 'weight-loss-drug', label: { en: 'Weight Loss Drug', es: 'Medicamento para Perder Peso', pt: 'Medicamento para Emagrecer' } },
     ],
     describe: { en: 'Please describe what happened', es: 'Por favor describe lo que pasó', pt: 'Por favor, descreva o que aconteceu' },
+    accidentState: { en: '- State Where Accident Happened -', es: '- Estado Donde Ocurrió el Accidente -', pt: '- Estado Onde Ocorreu o Acidente -' },
+    outsideUs: { en: 'Outside the United States', es: 'Fuera de Estados Unidos', pt: 'Fora dos Estados Unidos' },
+    yesNo: {
+      placeholder: { en: '- Select -', es: '- Selecciona -', pt: '- Selecione -' },
+      yes: { en: 'Yes', es: 'Sí', pt: 'Sim' },
+      no: { en: 'No', es: 'No', pt: 'Não' },
+    },
+    vehicleDamage: { en: '- Vehicle Damage? -', es: '- ¿Daño en el Vehículo? -', pt: '- Dano no Veículo? -' },
+    medicalTreatment: { en: '- Received Medical Care? -', es: '- ¿Recibiste Atención Médica? -', pt: '- Recebeu Atendimento Médico? -' },
+    hasAttorney: { en: '- Already Have an Attorney? -', es: '- ¿Ya Tienes Abogado? -', pt: '- Já Tem um Advogado? -' },
     legal1: {
       en: 'By submitting my phone number above I authorize Legal Connections, and its service providers, to contact me by phone call, text message, or WhatsApp at the number submitted. Consent is not a condition to receive services. Msg frequency varies. Msg & data rates may apply. Upon receipt of any message, reply STOP to unsubscribe.',
       es: 'Al enviar mi número de teléfono autorizo a Legal Connections, y a sus proveedores de servicio, a contactarme por llamada, mensaje de texto o WhatsApp al número indicado. El consentimiento no es una condición para recibir servicios. La frecuencia de mensajes varía. Pueden aplicar tarifas de mensajes y datos. Al recibir cualquier mensaje, responde STOP para cancelar.',
@@ -270,6 +281,30 @@ class LcHero extends HTMLElement {
                   ${f.languages.map((l) => `<option value="${l.value}">${t(l.label)}</option>`).join('')}
                 </select>
               </div>
+              <div class="row">
+                <select name="accidentState" aria-label="${t(f.accidentState)}">
+                  <option value="" selected disabled>${t(f.accidentState)}</option>
+                  ${usStates.map((s) => `<option value="${s.code}">${s.name} (${s.code})</option>`).join('')}
+                  <option value="outside-us">${t(f.outsideUs)}</option>
+                </select>
+                <select name="vehicleDamage" aria-label="${t(f.vehicleDamage)}">
+                  <option value="" selected disabled>${t(f.vehicleDamage)}</option>
+                  <option value="yes">${t(f.yesNo.yes)}</option>
+                  <option value="no">${t(f.yesNo.no)}</option>
+                </select>
+              </div>
+              <div class="row">
+                <select name="medicalTreatment" aria-label="${t(f.medicalTreatment)}">
+                  <option value="" selected disabled>${t(f.medicalTreatment)}</option>
+                  <option value="yes">${t(f.yesNo.yes)}</option>
+                  <option value="no">${t(f.yesNo.no)}</option>
+                </select>
+                <select name="hasAttorney" aria-label="${t(f.hasAttorney)}">
+                  <option value="" selected disabled>${t(f.hasAttorney)}</option>
+                  <option value="yes">${t(f.yesNo.yes)}</option>
+                  <option value="no">${t(f.yesNo.no)}</option>
+                </select>
+              </div>
               <textarea name="description" placeholder="${t(f.describe)}" aria-label="${t(f.describe)}"></textarea>
               <div class="legal">
                 <p>${t(f.legal1)}</p>
@@ -301,6 +336,10 @@ class LcHero extends HTMLElement {
       county: data.county,
       caseType: data.caseType,
       preferredLanguage: data.preferredLanguage,
+      accidentState: data.accidentState,
+      vehicleDamage: data.vehicleDamage,
+      medicalTreatment: data.medicalTreatment,
+      hasAttorney: data.hasAttorney,
       description: data.description,
       language: getLang(),
       consent: true, // consent is granted by submitting; legalese shown above the button

@@ -15,7 +15,30 @@ import {
   requirePermission,
   verify,
 } from './shared/adminAuth.js';
-import { sendLoginEmail } from './shared/mailer.js';
+import { sendLeadQualificationEmail, sendLoginEmail } from './shared/mailer.js';
+import { scoreLead } from './shared/leadScore.js';
+
+// Scores the lead and, the first time this runs for a given lead, emails the
+// NEW HOT/WARM/COLD LEAD notification. Called after a lead has its full
+// qualification picture: on create for the one-shot case-evaluation-form,
+// and on the avatar-intake's final PATCH (client sends intakeComplete: true).
+// Best-effort: failures here never fail the caller's save.
+async function qualifyAndNotify(env, db, id, row) {
+  try {
+    const { score, qualification, reasons } = scoreLead(rowToLead(row));
+    await db
+      .prepare('UPDATE leads SET qualification = ?, qualification_score = ? WHERE id = ?')
+      .bind(qualification, score, id)
+      .run();
+    await sendLeadQualificationEmail(env, { lead: rowToLead(row), score, qualification, reasons });
+    await db
+      .prepare('UPDATE leads SET qualification_emailed_at = ? WHERE id = ?')
+      .bind(new Date().toISOString(), id)
+      .run();
+  } catch (err) {
+    console.error('Failed to qualify/notify lead:', err);
+  }
+}
 
 async function handleHealth() {
   return json({ ok: true });
@@ -40,6 +63,16 @@ async function handleLeadsCreate(request, env) {
       .prepare(`INSERT INTO leads (${cols.join(', ')}) VALUES (${placeholders})`)
       .bind(...cols.map((c) => row[c]))
       .run();
+    // The static case-evaluation-form arrives complete in one POST, so it can
+    // be qualified immediately. avatar-intake/whatsapp-chat leads normally
+    // start with almost no data here and are qualified later, on the
+    // intake's final PATCH (see handleLeadsPatch) — except when that PATCH
+    // never had a lead to update because this very POST is itself the first
+    // save attempt (fallback in lc-avatar.js's finish()), signaled the same
+    // way: intakeComplete: true.
+    if (row.source === 'case-evaluation-form' || body.intakeComplete) {
+      await qualifyAndNotify(env, db, row.id, row);
+    }
     return json({ ok: true, id: row.id }, { status: 201 });
   } catch (err) {
     console.error('Failed to save lead:', err);
@@ -72,6 +105,18 @@ async function handleLeadsPatch(request, env, id) {
       .bind(...cols.map((c) => patch[c]), id)
       .run();
     if (!result.meta.changes) return json({ ok: false, errors: ['Lead not found'] }, { status: 404 });
+
+    // The guided intake sends intakeComplete: true on its last answer (see
+    // lc-avatar.js), which is the first point the lead has enough data to
+    // qualify. qualification_emailed_at guards against re-sending if the
+    // visitor somehow reaches "done" more than once.
+    if (body.intakeComplete) {
+      const row = await db.prepare('SELECT * FROM leads WHERE id = ?').bind(id).first();
+      if (row && !row.qualification_emailed_at) {
+        await qualifyAndNotify(env, db, id, row);
+      }
+    }
+
     return json({ ok: true, id });
   } catch (err) {
     console.error('Failed to update lead:', err);

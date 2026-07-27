@@ -1,5 +1,6 @@
 import { LC } from '../config.js';
 import { t, getLang, setLang, LANGS, LANG_META, onLangChange } from '../i18n.js';
+import { usStates } from '../data/usStates.js';
 
 const strings = {
   sub: {
@@ -42,8 +43,40 @@ const strings = {
   whenYesterday: { en: 'Yesterday', es: 'Ayer', pt: 'Ontem' },
   whenDaysAgo: { en: '{n} days ago', es: 'Hace {n} días', pt: 'Há {n} dias' },
   whenOver14: { en: 'More than 14 days ago', es: 'Hace más de 14 días', pt: 'Há mais de 14 dias' },
+  qAccidentState: {
+    en: 'What state did the accident happen in?',
+    es: '¿En qué estado ocurrió el accidente?',
+    pt: 'Em que estado aconteceu o acidente?',
+  },
+  accidentStatePlaceholder: { en: '- Select state -', es: '- Selecciona el estado -', pt: '- Selecione o estado -' },
+  outsideUs: { en: 'Outside the United States', es: 'Fuera de Estados Unidos', pt: 'Fora dos Estados Unidos' },
+  qRole: {
+    en: 'Were you the driver, a passenger, or a pedestrian?',
+    es: '¿Ibas manejando, eras pasajero o peatón?',
+    pt: 'Você estava dirigindo, era passageiro ou pedestre?',
+  },
+  roleOptions: [
+    { value: 'driver', label: { en: 'Driver', es: 'Conductor', pt: 'Motorista' } },
+    { value: 'passenger', label: { en: 'Passenger', es: 'Pasajero', pt: 'Passageiro' } },
+    { value: 'pedestrian', label: { en: 'Pedestrian', es: 'Peatón', pt: 'Pedestre' } },
+  ],
   qInjured: { en: 'Were you injured?', es: '¿Resultaste lesionado?', pt: 'Você ficou ferido?' },
+  qMedicalTreatment: {
+    en: 'Did you receive medical care (hospital, clinic, or doctor)?',
+    es: '¿Recibiste atención médica (hospital, clínica o doctor)?',
+    pt: 'Você recebeu atendimento médico (hospital, clínica ou médico)?',
+  },
+  qVehicleDamage: {
+    en: 'Was there damage to the vehicle?',
+    es: '¿Hubo daño en el vehículo?',
+    pt: 'Houve dano no veículo?',
+  },
   qPolice: { en: 'Did police respond to the accident?', es: '¿La policía respondió al accidente?', pt: 'A polícia foi acionada no acidente?' },
+  qHasPhotos: {
+    en: 'Do you have photos of the accident, plates, or damage?',
+    es: '¿Tienes fotos del accidente, placas o daños?',
+    pt: 'Você tem fotos do acidente, placas ou danos?',
+  },
   qFault: { en: 'Who do you think caused it?', es: '¿Quién crees que lo causó?', pt: 'Quem você acha que causou o acidente?' },
   faultOptions: [
     { value: 'other-driver', label: { en: 'The other driver', es: 'El otro conductor', pt: 'O outro motorista' } },
@@ -55,6 +88,11 @@ const strings = {
     en: 'Have you spoken with an insurance company yet?',
     es: '¿Ya hablaste con alguna aseguradora?',
     pt: 'Você já falou com alguma seguradora?',
+  },
+  qHasAttorney: {
+    en: 'Do you already have an attorney for this accident?',
+    es: '¿Ya tienes abogado para este accidente?',
+    pt: 'Você já tem um advogado para este acidente?',
   },
 
   guidanceIntro: {
@@ -699,8 +737,9 @@ class LcAvatar extends HTMLElement {
   }
 
   /* -------- progressive save: POST once, PATCH afterwards -------- */
-  async save() {
+  async save(complete = false) {
     const payload = { ...this.lead, language: getLang(), source: 'avatar-intake' };
+    if (complete) payload.intakeComplete = true;
     try {
       if (!this.leadId) {
         const res = await fetch('/api/leads', {
@@ -743,15 +782,40 @@ class LcAvatar extends HTMLElement {
           ? new Date(Date.now() - Number(value) * 86400000).toISOString().slice(0, 10)
           : 'over-14-days';
         this.save();
+        this.stepId = 'accidentState';
+        break;
+      case 'accidentState':
+        this.lead.accidentState = value;
+        this.save();
+        this.stepId = 'role';
+        break;
+      case 'role':
+        this.lead.accidentRole = value;
+        this.save();
         this.stepId = 'injured';
         break;
       case 'injured':
         this.lead.injured = value;
         this.save();
+        this.stepId = 'medicalTreatment';
+        break;
+      case 'medicalTreatment':
+        this.lead.medicalTreatment = value;
+        this.save();
+        this.stepId = 'vehicleDamage';
+        break;
+      case 'vehicleDamage':
+        this.lead.vehicleDamage = value;
+        this.save();
         this.stepId = 'police';
         break;
       case 'police':
         this.lead.policeResponded = value;
+        this.save();
+        this.stepId = 'hasPhotos';
+        break;
+      case 'hasPhotos':
+        this.lead.hasPhotos = value;
         this.save();
         this.stepId = 'fault';
         break;
@@ -762,6 +826,11 @@ class LcAvatar extends HTMLElement {
         break;
       case 'insurance':
         this.lead.spokeWithInsurance = value;
+        this.save();
+        this.stepId = 'hasAttorney';
+        break;
+      case 'hasAttorney':
+        this.lead.hasAttorney = value;
         this.save();
         this.stepId = 'guidance';
         break;
@@ -786,7 +855,7 @@ class LcAvatar extends HTMLElement {
         break;
       case 'languagePref':
         this.lead.preferredLanguage = value;
-        this.save();
+        this.save(true);
         this.stepId = 'done';
         // Switching the site language re-renders us via onLangChange.
         if (value !== getLang()) { setLang(value); return; }
@@ -850,12 +919,37 @@ class LcAvatar extends HTMLElement {
         break;
       }
 
+      case 'accidentState': {
+        const options = usStates.map((s) => ({ value: s.code, label: `${s.name} (${s.code})` }));
+        options.push({ value: 'outside-us', label: t(strings.outsideUs) });
+        show(t(strings.qAccidentState), () => {
+          this.selectInput(controls, { options, placeholder: t(strings.accidentStatePlaceholder) });
+        });
+        break;
+      }
+
+      case 'role':
+        show(t(strings.qRole), () => this.chips(controls, strings.roleOptions));
+        break;
+
       case 'injured':
         show(t(strings.qInjured), () => this.chips(controls, yesNoUnsure));
         break;
 
+      case 'medicalTreatment':
+        show(t(strings.qMedicalTreatment), () => this.chips(controls, yesNo));
+        break;
+
+      case 'vehicleDamage':
+        show(t(strings.qVehicleDamage), () => this.chips(controls, yesNoUnsure));
+        break;
+
       case 'police':
         show(t(strings.qPolice), () => this.chips(controls, yesNoUnsure));
+        break;
+
+      case 'hasPhotos':
+        show(t(strings.qHasPhotos), () => this.chips(controls, yesNo));
         break;
 
       case 'fault':
@@ -864,6 +958,10 @@ class LcAvatar extends HTMLElement {
 
       case 'insurance':
         show(t(strings.qInsurance), () => this.chips(controls, yesNo));
+        break;
+
+      case 'hasAttorney':
+        show(t(strings.qHasAttorney), () => this.chips(controls, yesNo));
         break;
 
       case 'guidance': {
@@ -952,7 +1050,7 @@ class LcAvatar extends HTMLElement {
   }
 
   async finish(controls, show) {
-    if (!this.leadId) await this.save(); // last chance if earlier saves failed
+    if (!this.leadId) await this.save(true); // last chance if earlier saves failed
     const template = this.leadId ? strings.done : strings.doneNoSave;
     const caption = t(template).replace('{name}', this.firstName());
     const waText = encodeURIComponent(t(strings.whatsappGreeting));

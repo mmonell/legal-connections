@@ -36,3 +36,50 @@ export async function sendLoginEmail(env, { to, code, link }) {
   console.log(`[mailer] TODO SES send to ${to} from ${from}: "${subject}"\n${body}`);
   return { sent: true };
 }
+
+// New-lead notification, sent right after a lead is created. Subject carries
+// the HOT/WARM/COLD qualification so the team can triage from the inbox
+// preview alone, per FORMATO DE CALIFICACIÓN DE LEAD — LEGAL CONNECTIONS.
+//
+// Recipient: CONTACT_EMAIL (the real intake inbox once set). While testing —
+// CONTACT_EMAIL unset — falls back to the default sender address
+// (do-not-reply@legal-connections.com) so the flow is exercisable end-to-end
+// before a real inbox is configured.
+export async function sendLeadQualificationEmail(env, { lead, score, qualification, reasons }) {
+  const to = env.CONTACT_EMAIL || DEFAULT_SENDER_EMAIL;
+  const from = env.CONTACT_SENDER_EMAIL || DEFAULT_SENDER_EMAIL;
+  const label = qualification.toUpperCase();
+  const subject = `NEW ${label} LEAD`;
+  const body = [
+    `Qualification: ${label} (${score} points)`,
+    '',
+    'Why:',
+    ...reasons.map((r) => `- ${r}`),
+    '',
+    'Lead details:',
+    `Name: ${lead.name || '-'}`,
+    `Phone: ${lead.phone || '-'}`,
+    `Email: ${lead.email || '-'}`,
+    `Source: ${lead.source || '-'}`,
+    `Case type: ${lead.caseType || '-'}`,
+    `State of residence: ${lead.stateOfResidence || '-'}`,
+    `Accident state/city: ${lead.accidentState || '-'} / ${lead.city || '-'}`,
+    `Accident date: ${lead.accidentDate || '-'}`,
+    `Injured / medical treatment: ${lead.injured || '-'} / ${lead.medicalTreatment || '-'}`,
+    `Vehicle damage: ${lead.vehicleDamage || '-'}`,
+    `Police report / photos: ${lead.policeResponded || '-'} / ${lead.hasPhotos || '-'}`,
+    `Fault belief: ${lead.faultBelief || '-'}`,
+    `Has attorney already: ${lead.hasAttorney || '-'}`,
+    `Preferred language: ${lead.preferredLanguage || lead.language || '-'}`,
+    `Description: ${lead.description || '-'}`,
+  ].join('\n');
+
+  if (!env.AWS_SES_KEY || !env.AWS_SES_SECRET || !env.AWS_REGION) {
+    console.log(`[mailer] SES not configured; dev bypass for lead notification to ${to}. Subject: "${subject}"\n${body}`);
+    return { sent: false, devBypass: true };
+  }
+
+  // TODO(launch): send via AWS SES, same as sendLoginEmail above.
+  console.log(`[mailer] TODO SES send to ${to} from ${from}: "${subject}"\n${body}`);
+  return { sent: true };
+}

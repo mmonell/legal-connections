@@ -23,6 +23,13 @@ function sanitizeFields(input) {
     description: input.description ? String(input.description).trim().slice(0, 5000) : null,
     language: LANGUAGES.has(input.language) ? input.language : 'en',
     consent: Boolean(input.consent),
+    stateOfResidence: input.stateOfResidence ? String(input.stateOfResidence).trim().slice(0, 60) : null,
+    accidentState: input.accidentState ? String(input.accidentState).trim().slice(0, 60) : null,
+    vehicleDamage: input.vehicleDamage ? String(input.vehicleDamage).trim().slice(0, 20) : null,
+    hasPhotos: input.hasPhotos ? String(input.hasPhotos).trim().slice(0, 20) : null,
+    medicalTreatment: input.medicalTreatment ? String(input.medicalTreatment).trim().slice(0, 20) : null,
+    hasAttorney: input.hasAttorney ? String(input.hasAttorney).trim().slice(0, 20) : null,
+    accidentRole: input.accidentRole ? String(input.accidentRole).trim().slice(0, 20) : null,
   };
 }
 
@@ -60,6 +67,13 @@ const CAMEL_TO_COL = {
   description: 'description',
   language: 'language',
   consent: 'consent',
+  stateOfResidence: 'state_of_residence',
+  accidentState: 'accident_state',
+  vehicleDamage: 'vehicle_damage',
+  hasPhotos: 'has_photos',
+  medicalTreatment: 'medical_treatment',
+  hasAttorney: 'has_attorney',
+  accidentRole: 'accident_role',
 };
 
 export function buildLeadRow(input) {
@@ -110,5 +124,14 @@ export function rowToLead(row) {
     description: row.description,
     language: row.language,
     consent: Boolean(row.consent),
+    stateOfResidence: row.state_of_residence,
+    accidentState: row.accident_state,
+    vehicleDamage: row.vehicle_damage,
+    hasPhotos: row.has_photos,
+    medicalTreatment: row.medical_treatment,
+    hasAttorney: row.has_attorney,
+    accidentRole: row.accident_role,
+    qualification: row.qualification,
+    qualificationScore: row.qualification_score,
   };
 }

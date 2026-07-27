@@ -8,4 +8,10 @@ export const LC = {
   whatsappNumber: '17875550123', // TODO real number, digits only with country code
   email: 'info@legalconnections.com', // TODO real email
   siteUrl: 'https://www.legalconnections.com',
+  social: {
+    facebook: 'https://www.facebook.com/profile.php?id=61592322682478',
+    instagram: 'https://instagram.com/legalconnections', // TODO real handle
+    tiktok: 'https://tiktok.com/@legalconnections', // TODO real handle
+    youtube: 'https://youtube.com/@legalconnections', // TODO real handle
+  },
 };
