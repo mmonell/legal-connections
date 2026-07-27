@@ -5,16 +5,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler pages dev public --compatibility-date=2026-01-01",
-    "test": "node --test functions/",
+    "dev": "wrangler dev",
+    "test": "node --test src/shared/*.test.js",
     "db:migrate:local": "wrangler d1 migrations apply legal-connections --local",
     "db:migrate:remote": "wrangler d1 migrations apply legal-connections --remote",
-    "deploy": "wrangler pages deploy public"
+    "deploy": "wrangler deploy"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
-    "wrangler": "^3"
+    "wrangler": "^4"
   }
 }

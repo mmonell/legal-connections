@@ -5,7 +5,7 @@
 // device without opening the mail app.
 //
 // Dev bypass: until SES is configured (AWS_SES_KEY/AWS_SES_SECRET/AWS_REGION
-// secrets set via `wrangler pages secret put`), no email is sent; the caller
+// secrets set via `wrangler secret put`), no email is sent; the caller
 // receives the code back and the admin page shows it on screen.
 //
 // Default sender if CONTACT_SENDER_EMAIL isn't set: do-not-reply@legal-connections.com

@@ -1,8 +1,9 @@
 # Test Workspace (dev working copy)
 
-This is the dev working copy — all hand-edits happen here. Cloudflare Pages
-deploys from `/client`, a generated copy of this folder (`ops/scripts/sync-to-client.sh`
-promotes changes); never edit `/client` directly.
+This is the dev working copy — all hand-edits happen here. Cloudflare Workers
+(via Workers Builds Git integration) deploys from `/client`, a generated copy
+of this folder (`ops/scripts/sync-to-client.sh` promotes changes); never edit
+`/client` directly.
 
 The homepage combines a conversational guided intake with a classic marketing
 page, rather than choosing one or the other (spec:
@@ -32,7 +33,7 @@ form-based way to convert.
 * `/admin` — internal leads viewer (table, CSV/XLSX/JSON export, delete) with
   passwordless sign-in: an emailed 6-digit code + magic link (the code rides in
   the email SUBJECT so it is readable from the notification preview). Email
-  goes out via AWS SES (`functions/_shared/mailer.js`, TODO: wire real SES
+  goes out via AWS SES (`src/shared/mailer.js`, TODO: wire real SES
   sending — see that file); until SES is configured, a dev bypass shows the
   code on the page. Users + roles live in the D1 `admin_users` table
   (superadmin: view/download/delete/manage users; admin: same minus delete;
@@ -41,37 +42,42 @@ form-based way to convert.
 
 ## Structure
 
-* `public/` — everything the browser loads, served statically by Cloudflare
-  Pages (this directory is `pages_build_output_dir` in `wrangler.toml`)
+* `public/` — everything the browser loads, served as static assets by the
+  Worker (`[assets] directory = "public"` in `wrangler.toml`)
   * `index.html`, `landing.html`, `admin.html`, `services/*.html` — pages
   * `global.css` — design tokens + shared styles (only global stylesheet)
   * `config.js` — contact info, WhatsApp number, brand constants (edit here, nowhere else)
   * `i18n.js` — language state (EN/ES), `t()` helper, `lc-lang-change` event
   * `components/` — native Web Components, one per file, tag = filename
-* `functions/` — Cloudflare Pages Functions (the backend). File-based routing:
-  `functions/api/leads/index.js` handles `/api/leads`, `[id].js` files handle
-  `/api/leads/:id`-style dynamic segments. Each file exports
-  `onRequestGet`/`onRequestPost`/etc. per HTTP method.
-  * `_shared/` — helpers used by multiple routes: `leads.js` (sanitize/
+* `src/` — the backend, a single Cloudflare Worker (no file-based routing —
+  Workers, unlike classic Pages Functions, route everything through one
+  `fetch` handler)
+  * `index.js` — the Worker entry point. Requests under `/api/` are matched
+    against a route table (method + path regex) and dispatched to a handler
+    function; everything else falls through to `env.ASSETS.fetch(request)`
+    to serve `public/`.
+  * `shared/` — helpers used by multiple routes: `leads.js` (sanitize/
     validate/row-mapping), `adminAuth.js` (sessions, login codes, permission
     checks), `mailer.js` (SES email), `rateLimit.js` (D1-backed per-IP limit)
-  * `api/leads/`, `api/health.js` — public lead-capture endpoints
-  * `api/admin/` — auth (request/verify/signout), `me.js`, `leads/`
-    (list/delete), `users/` (list/create) — every route here calls
-    `requirePermission()` from `_shared/adminAuth.js` first
+  * Routes: `POST /api/leads`, `PATCH /api/leads/:id`, `GET /api/health`,
+    `GET /api/admin/me`, `POST /api/admin/auth/{request,verify,signout}`,
+    `GET /api/admin/leads`, `DELETE /api/admin/leads/:id`,
+    `GET|POST /api/admin/users` — every `/api/admin/*` route except auth
+    calls `requirePermission()` from `shared/adminAuth.js` first
 * `migrations/` — D1 schema. `0001_init.sql` is the baseline schema (leads,
   admin_users, admin_sessions, admin_login_codes, rate_limit_hits) plus the
   two seed admin accounts. `seed_dev_leads.sql` is optional dev-only sample
   data, never auto-applied. New migrations must be additive only — see
   `docs/guides/DEPLOYING.md`.
-* `wrangler.toml` — Cloudflare Pages project config (D1 binding name `DB`,
-  compatibility date). Secrets (SES credentials) are set via
-  `wrangler pages secret put`, never committed.
+* `wrangler.toml` — Worker config: `name` (must match the Worker name in the
+  Cloudflare dashboard exactly, or Workers Builds fails), `main` (entry
+  point), `[assets]` (static file serving), D1 binding name `DB`. Secrets
+  (SES credentials) are set via `wrangler secret put`, never committed.
 
 ## Local development
 
 Requires Node 22+ (Wrangler's requirement — separate from what the deployed
-Functions run under, which is Cloudflare's own Workers runtime regardless of
+Worker runs under, which is Cloudflare's own Workers runtime regardless of
 your local Node version):
 
 ```
@@ -79,7 +85,7 @@ nvm install 22 && nvm use 22
 cd test
 npm install
 npm run db:migrate:local   # applies migrations/*.sql to a local D1 sqlite file
-npm run dev                # wrangler pages dev — serves public/ + functions/
+npm run dev                # wrangler dev — serves public/ + src/index.js together
 ```
 
 See `docs/guides/RUNNING.md` for the full walkthrough and
@@ -91,7 +97,7 @@ See `docs/guides/RUNNING.md` for the full walkthrough and
 * Every component keeps its own `strings = { en: {...}, es: {...} }` and re-renders on the `lc-lang-change` document event.
 * Styles: design tokens (colors, spacing, fonts) come from `global.css` CSS variables; component-scoped rules go in a `<style>` block inside the component's `innerHTML`. No Shadow DOM (keeps global tokens simple).
 * No frameworks, no npm packages on the frontend, no build step.
-* Backend: one file per route under `functions/`, shared logic in `functions/_shared/`. Validate every API input server-side; never trust the form. D1 queries always use `.bind()` parameters — never string-interpolate user input into SQL.
+* Backend: a single Worker (`src/index.js`) dispatching to handler functions, shared logic in `src/shared/`. Validate every API input server-side; never trust the form. D1 queries always use `.bind()` parameters — never string-interpolate user input into SQL.
 * Tests: `feature-name.test.js` next to the code it covers, run with `node --test`.
 
 ## Patterns to Avoid
