@@ -3,8 +3,8 @@
 export const LC = {
   brandName: 'Legal Connections',
   tagline: { en: 'Connected by Trust', es: 'Conectados por la Confianza', pt: 'Conectados pela Confiança' },
-  phoneDisplay: '(787) 555-0123', // TODO real number
-  phoneHref: 'tel:+17875550123', // TODO real number
+  phoneDisplay: '(407) 603-3030',
+  phoneHref: 'tel:+14076033030',
   whatsappNumber: '17875550123', // TODO real number, digits only with country code
   email: 'info@legalconnections.com', // TODO real email
   siteUrl: 'https://www.legalconnections.com',
