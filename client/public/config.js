@@ -10,8 +10,8 @@ export const LC = {
   siteUrl: 'https://www.legalconnections.com',
   social: {
     facebook: 'https://www.facebook.com/profile.php?id=61592322682478',
-    instagram: 'https://instagram.com/legalconnections', // TODO real handle
-    tiktok: 'https://tiktok.com/@legalconnections', // TODO real handle
+    instagram: 'https://instagram.com/legalconnections.us', // TODO real handle
+    tiktok: 'https://tiktok.com/@legalconnections.us', // TODO real handle
     youtube: 'https://youtube.com/@legalconnections', // TODO real handle
   },
 };
