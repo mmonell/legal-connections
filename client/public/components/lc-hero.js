@@ -2,6 +2,7 @@ import { LC } from '../config.js';
 import { t, getLang, onLangChange } from '../i18n.js';
 import { floridaCities, floridaCounties } from '../data/florida.js';
 import { usStates } from '../data/usStates.js';
+import { SERVICE_FLOWS, YES_NO, YES_NO_UNSURE } from './serviceFlows.js';
 
 const strings = {
   kicker: { en: 'Accident Injury Referrals', es: 'Referidos por Accidentes', pt: 'Indicações por Acidentes' },
@@ -79,16 +80,11 @@ const strings = {
       { value: 'weight-loss-drug', label: { en: 'Weight Loss Drug', es: 'Medicamento para Perder Peso', pt: 'Medicamento para Emagrecer' } },
     ],
     describe: { en: 'Please describe what happened', es: 'Por favor describe lo que pasó', pt: 'Por favor, descreva o que aconteceu' },
-    accidentState: { en: '- State Where Accident Happened -', es: '- Estado Donde Ocurrió el Accidente -', pt: '- Estado Onde Ocorreu o Acidente -' },
     outsideUs: { en: 'Outside the United States', es: 'Fuera de Estados Unidos', pt: 'Fora dos Estados Unidos' },
-    yesNo: {
-      placeholder: { en: '- Select -', es: '- Selecciona -', pt: '- Selecione -' },
-      yes: { en: 'Yes', es: 'Sí', pt: 'Sim' },
-      no: { en: 'No', es: 'No', pt: 'Não' },
-    },
-    vehicleDamage: { en: '- Vehicle Damage? -', es: '- ¿Daño en el Vehículo? -', pt: '- Dano no Veículo? -' },
-    medicalTreatment: { en: '- Received Medical Care? -', es: '- ¿Recibiste Atención Médica? -', pt: '- Recebeu Atendimento Médico? -' },
-    hasAttorney: { en: '- Already Have an Attorney? -', es: '- ¿Ya Tienes Abogado? -', pt: '- Já Tem um Advogado? -' },
+    whenToday: { en: 'Today', es: 'Hoy', pt: 'Hoje' },
+    whenYesterday: { en: 'Yesterday', es: 'Ayer', pt: 'Ontem' },
+    whenDaysAgo: { en: '{n} days ago', es: 'Hace {n} días', pt: 'Há {n} dias' },
+    whenOver14: { en: 'More than 14 days ago', es: 'Hace más de 14 días', pt: 'Há mais de 14 dias' },
     legal1: {
       en: 'By submitting my phone number above I authorize Legal Connections, and its service providers, to contact me by phone call, text message, or WhatsApp at the number submitted. Consent is not a condition to receive services. Msg frequency varies. Msg & data rates may apply. Upon receipt of any message, reply STOP to unsubscribe.',
       es: 'Al enviar mi número de teléfono autorizo a Legal Connections, y a sus proveedores de servicio, a contactarme por llamada, mensaje de texto o WhatsApp al número indicado. El consentimiento no es una condición para recibir servicios. La frecuencia de mensajes varía. Pueden aplicar tarifas de mensajes y datos. Al recibir cualquier mensaje, responde STOP para cancelar.',
@@ -135,7 +131,7 @@ const SERVICE_OVERRIDES = {
       es: 'Cuéntanos qué pasó y te conectamos con un abogado de daños personales de confianza que te escuchará y luchará por ti, sin costo para ti.',
       pt: 'Conte-nos o que aconteceu e te conectamos com um advogado de lesões pessoais de confiança que vai te ouvir e lutar por você, sem custo algum.',
     },
-    caseType: 'other', // personal-injury case types (slip & fall, malpractice, etc.) live under "Other" in this form's list
+    caseType: 'personal-injury', // routes to the personal-injury scorer (leadScore.js)
   },
   'workers-comp': {
     kicker: { en: 'Workers’ Compensation', es: 'Compensación Laboral', pt: 'Indenização Trabalhista' },
@@ -155,7 +151,7 @@ const SERVICE_OVERRIDES = {
       es: 'Cuéntanos tu situación y te conectamos con un abogado de inmigración de confianza que te explica tus opciones con claridad, en tu idioma, sin costo para ti.',
       pt: 'Conte-nos sua situação e te conectamos com um advogado de imigração de confiança que explica suas opções com clareza, no seu idioma, sem custo algum.',
     },
-    caseType: 'other',
+    caseType: 'immigration', // routes to the immigration scorer (leadScore.js)
   },
 };
 
@@ -172,6 +168,9 @@ class LcHero extends HTMLElement {
     const headline = override?.headline || strings.headline;
     const sub = override?.sub || strings.sub;
     const presetCaseType = override?.caseType || '';
+    // The static form asks this service's qualifying questions (serviceFlows.js).
+    // The homepage form (no `service` attr) focuses on auto accidents.
+    const flowKey = this.getAttribute('service') || 'auto-accidents';
     const topSpacer = this.hasAttribute('top-spacer'); // clears the absolutely-positioned no-nav header on landing pages
     this.innerHTML = `
       <style>
@@ -274,6 +273,7 @@ class LcHero extends HTMLElement {
               <div class="row">
                 <select name="caseType" required aria-label="${t(f.caseType)}">
                   <option value="" ${presetCaseType ? '' : 'selected'} disabled>${t(f.caseType)}</option>
+                  ${presetCaseType && !f.caseTypes.some((c) => c.value === presetCaseType) ? `<option value="${presetCaseType}" selected>${t(kicker)}</option>` : ''}
                   ${f.caseTypes.map((c) => `<option value="${c.value}" ${c.value === presetCaseType ? 'selected' : ''}>${t(c.label)}</option>`).join('')}
                 </select>
                 <select name="preferredLanguage" aria-label="${t(f.preferredLanguage)}">
@@ -281,30 +281,7 @@ class LcHero extends HTMLElement {
                   ${f.languages.map((l) => `<option value="${l.value}">${t(l.label)}</option>`).join('')}
                 </select>
               </div>
-              <div class="row">
-                <select name="accidentState" aria-label="${t(f.accidentState)}">
-                  <option value="" selected disabled>${t(f.accidentState)}</option>
-                  ${usStates.map((s) => `<option value="${s.code}">${s.name} (${s.code})</option>`).join('')}
-                  <option value="outside-us">${t(f.outsideUs)}</option>
-                </select>
-                <select name="vehicleDamage" aria-label="${t(f.vehicleDamage)}">
-                  <option value="" selected disabled>${t(f.vehicleDamage)}</option>
-                  <option value="yes">${t(f.yesNo.yes)}</option>
-                  <option value="no">${t(f.yesNo.no)}</option>
-                </select>
-              </div>
-              <div class="row">
-                <select name="medicalTreatment" aria-label="${t(f.medicalTreatment)}">
-                  <option value="" selected disabled>${t(f.medicalTreatment)}</option>
-                  <option value="yes">${t(f.yesNo.yes)}</option>
-                  <option value="no">${t(f.yesNo.no)}</option>
-                </select>
-                <select name="hasAttorney" aria-label="${t(f.hasAttorney)}">
-                  <option value="" selected disabled>${t(f.hasAttorney)}</option>
-                  <option value="yes">${t(f.yesNo.yes)}</option>
-                  <option value="no">${t(f.yesNo.no)}</option>
-                </select>
-              </div>
+              ${this.qualFieldsHtml(flowKey)}
               <textarea name="description" placeholder="${t(f.describe)}" aria-label="${t(f.describe)}"></textarea>
               <div class="legal">
                 <p>${t(f.legal1)}</p>
@@ -320,6 +297,47 @@ class LcHero extends HTMLElement {
     this.querySelector('form').addEventListener('submit', (e) => this.submit(e));
   }
 
+  // Renders this service's qualifying questions (serviceFlows.js) as form
+  // selects, so the static form captures the SAME fields as the guided intake
+  // and a completed form scores identically. Returns rows of two selects each.
+  qualFieldsHtml(flowKey) {
+    const steps = SERVICE_FLOWS[flowKey] || [];
+    const optionsFor = (step) => {
+      if (step.control === 'dateSelect') {
+        const opts = [];
+        for (let n = 0; n <= 14; n++) {
+          const label =
+            n === 0 ? t(strings.form.whenToday)
+            : n === 1 ? t(strings.form.whenYesterday)
+            : t(strings.form.whenDaysAgo).replace('{n}', n);
+          opts.push({ value: String(n), label });
+        }
+        opts.push({ value: 'over-14', label: t(strings.form.whenOver14) });
+        return opts;
+      }
+      if (step.control === 'stateSelect') {
+        return [
+          ...usStates.map((s) => ({ value: s.code, label: `${s.name} (${s.code})` })),
+          { value: 'outside-us', label: t(strings.form.outsideUs) },
+        ];
+      }
+      const set = step.control === 'yesno' ? YES_NO : step.control === 'yesnounsure' ? YES_NO_UNSURE : step.options;
+      return set.map((o) => ({ value: o.value, label: t(o.label) }));
+    };
+    const selectHtml = (step) => {
+      const placeholder = t(step.question);
+      const opts = optionsFor(step)
+        .map((o) => `<option value="${o.value}">${o.label}</option>`)
+        .join('');
+      return `<select name="${step.field}" aria-label="${placeholder}"><option value="" selected disabled>${placeholder}</option>${opts}</select>`;
+    };
+    let html = '';
+    for (let i = 0; i < steps.length; i += 2) {
+      html += `<div class="row">${selectHtml(steps[i])}${steps[i + 1] ? selectHtml(steps[i + 1]) : ''}</div>`;
+    }
+    return html;
+  }
+
   async submit(e) {
     e.preventDefault();
     const f = strings.form;
@@ -328,23 +346,25 @@ class LcHero extends HTMLElement {
     const msg = form.querySelector('.msg');
     const data = Object.fromEntries(new FormData(form).entries());
 
+    // Qualifying-question fields are dynamic per service (qualFieldsHtml), so
+    // spread whatever the form collected rather than listing each by hand.
+    const { firstName, lastName, accidentDate, ...rest } = data;
+
     const payload = {
-      name: `${(data.firstName || '').trim()} ${(data.lastName || '').trim()}`.trim(),
-      phone: data.phone,
-      email: data.email,
-      city: data.city,
-      county: data.county,
-      caseType: data.caseType,
-      preferredLanguage: data.preferredLanguage,
-      accidentState: data.accidentState,
-      vehicleDamage: data.vehicleDamage,
-      medicalTreatment: data.medicalTreatment,
-      hasAttorney: data.hasAttorney,
-      description: data.description,
+      ...rest,
+      name: `${(firstName || '').trim()} ${(lastName || '').trim()}`.trim(),
       language: getLang(),
       consent: true, // consent is granted by submitting; legalese shown above the button
       source: 'case-evaluation-form',
     };
+
+    // The date select stores "days ago" (0-14) or the 'over-14' flag; convert
+    // to the same YYYY-MM-DD / 'over-14-days' shape the intake and scorer use.
+    if (accidentDate !== undefined && accidentDate !== '') {
+      payload.accidentDate = /^\d+$/.test(accidentDate)
+        ? new Date(Date.now() - Number(accidentDate) * 86400000).toISOString().slice(0, 10)
+        : 'over-14-days';
+    }
 
     btn.disabled = true;
     btn.textContent = t(f.sending);

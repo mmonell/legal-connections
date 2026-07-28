@@ -16,7 +16,7 @@ import {
   verify,
 } from './shared/adminAuth.js';
 import { sendLeadQualificationEmail, sendLoginEmail } from './shared/mailer.js';
-import { scoreLead } from './shared/leadScore.js';
+import { scoreLeadForService } from './shared/leadScore.js';
 
 // Scores the lead and, the first time this runs for a given lead, emails the
 // NEW HOT/WARM/COLD LEAD notification. Called after a lead has its full
@@ -25,7 +25,7 @@ import { scoreLead } from './shared/leadScore.js';
 // Best-effort: failures here never fail the caller's save.
 async function qualifyAndNotify(env, db, id, row) {
   try {
-    const { score, qualification, reasons } = scoreLead(rowToLead(row));
+    const { score, qualification, reasons } = scoreLeadForService(rowToLead(row));
     await db
       .prepare('UPDATE leads SET qualification = ?, qualification_score = ? WHERE id = ?')
       .bind(qualification, score, id)
@@ -82,10 +82,11 @@ async function handleLeadsCreate(request, env) {
 
 async function handleLeadsPatch(request, env, id) {
   const db = env.DB;
-  const ip = clientIp(request);
-  if (await rateLimited(db, ip)) {
-    return json({ ok: false, errors: ['Too many requests, please call us instead.'] }, { status: 429 });
-  }
+  // No rate limit here: a PATCH updates an existing lead the visitor already
+  // created (POST is where the per-IP limit guards against creation spam). The
+  // guided intake saves one PATCH per answer, so a single completed intake can
+  // fire 15+ updates — throttling those would silently drop the later answers
+  // (contact info, attorney, insurance) and leave the lead unscored.
 
   const body = (await request.json().catch(() => null)) || {};
   const errors = validateLead({ ...body, source: 'avatar-intake' });

@@ -100,3 +100,44 @@ h1, h2, h3 { line-height: 1.15; margin: 0 0 0.5em; letter-spacing: -0.01em; }
   html { scroll-behavior: auto; }
   .lc-btn { transition: none; }
 }
+
+/* Accessibility widget (lc-accessibility.js) toggles these on <html>. Kept
+   here in the one global stylesheet so they apply site-wide regardless of
+   which component rendered a given element. */
+html[data-a11y-big-text] body { font-size: 1.15rem; }
+html[data-a11y-big-text] { --lc-max: 1180px; }
+
+html[data-a11y-contrast] body { background: #fff; color: #000; }
+html[data-a11y-contrast] .lc-section--light { background: #fff; }
+html[data-a11y-contrast] a:not(.lc-btn) { color: #0033cc; }
+
+html[data-a11y-readable-font],
+html[data-a11y-readable-font] body {
+  --lc-font: Verdana, Tahoma, "Segoe UI", Arial, sans-serif;
+  font-family: var(--lc-font);
+  letter-spacing: 0.01em;
+}
+
+html[data-a11y-highlight-links] a {
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+  outline: 2px solid var(--lc-cta);
+  outline-offset: 2px;
+}
+
+/* Manual "reduce motion" toggle mirrors the OS-level preference above. */
+html[data-a11y-reduce-motion] { scroll-behavior: auto; }
+html[data-a11y-reduce-motion] *,
+html[data-a11y-reduce-motion] *::before,
+html[data-a11y-reduce-motion] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Keyboard focus visibility — a baseline a11y improvement regardless of the widget. */
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+  outline: 3px solid var(--lc-cta);
+  outline-offset: 2px;
+}

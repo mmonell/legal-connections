@@ -8,9 +8,13 @@
 // { devBypass: true } back so the caller can surface the info another way
 // (e.g. the admin page shows the login code on screen instead of emailing it).
 //
-// Default sender if CONTACT_SENDER_EMAIL isn't set: do-not-reply@legal-connections.com
-// (see .env.example and docs/guides/DEPLOYING.md).
-const DEFAULT_SENDER_EMAIL = 'do-not-reply@legal-connections.com';
+// Default sender if CONTACT_SENDER_EMAIL isn't set: do-not-reply@mail.legal-connections.com
+// (see .env.example and docs/guides/DEPLOYING.md). Sent from a dedicated
+// "mail." subdomain, not the root domain, so this app's sending reputation
+// is isolated from the root domain's other mail (e.g. Zoho) and from any
+// future newsletter sending (news.legal-connections.com) — a reputation hit
+// on one doesn't drag down the others.
+const DEFAULT_SENDER_EMAIL = 'do-not-reply@mail.legal-connections.com';
 
 async function hmac(key, message) {
   const cryptoKey = await crypto.subtle.importKey(
@@ -156,8 +160,8 @@ export async function sendLoginEmail(env, { to, code, link }) {
 //
 // Recipient: CONTACT_EMAIL (the real intake inbox once set). While testing —
 // CONTACT_EMAIL unset — falls back to the default sender address
-// (do-not-reply@legal-connections.com) so the flow is exercisable end-to-end
-// before a real inbox is configured.
+// (do-not-reply@mail.legal-connections.com) so the flow is exercisable
+// end-to-end before a real inbox is configured.
 export async function sendLeadQualificationEmail(env, { lead, score, qualification, reasons }) {
   const to = env.CONTACT_EMAIL || DEFAULT_SENDER_EMAIL;
   const label = qualification.toUpperCase();

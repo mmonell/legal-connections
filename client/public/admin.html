@@ -50,6 +50,11 @@
     tr.selected td { background: #dcecff; }
     tr.selected:hover td { background: #cfe4ff; }
 
+    .qual { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 800; font-size: 0.78rem; letter-spacing: 0.02em; }
+    .qual-hot { background: #fde3df; color: #b3261e; }
+    .qual-warm { background: #fff2d6; color: #a8650a; }
+    .qual-cold { background: #e3ecf5; color: #3a5a80; }
+
     .selection-bar {
       display: none; align-items: center; gap: 12px;
       background: var(--lc-emerald-deep); color: var(--lc-white);
@@ -154,10 +159,14 @@
 
   <script>
     const COLS = [
-      'receivedAt', 'updatedAt', 'source', 'name', 'phone', 'email',
-      'caseType', 'accidentDate', 'injured', 'policeResponded', 'faultBelief',
-      'spokeWithInsurance', 'city', 'county', 'preferredLanguage', 'language',
-      'consent', 'description', 'id',
+      'receivedAt', 'updatedAt', 'qualification', 'qualificationScore', 'source',
+      'name', 'phone', 'email', 'caseType', 'accidentDate', 'accidentState',
+      'accidentRole', 'injured', 'medicalTreatment', 'vehicleDamage',
+      'policeResponded', 'hasPhotos', 'faultBelief', 'spokeWithInsurance',
+      'hasAttorney', 'hasEvidence', 'injuredAtWork', 'reportedToEmployer',
+      'lostWages', 'immigrationCaseType', 'hasDeadline', 'inUs',
+      'stateOfResidence', 'city', 'county', 'preferredLanguage',
+      'language', 'consent', 'description', 'id',
     ];
     const $ = (id) => document.getElementById(id);
     let me = null;
@@ -206,6 +215,7 @@
     function formatCell(col, lead) {
       const raw = lead[col];
       if (raw === null || raw === undefined || raw === '') return '';
+      if (col === 'qualification') return String(raw).toUpperCase();
       if (col === 'source') return SOURCE_LABELS[raw] || titleizeValue(String(raw));
       if (col === 'preferredLanguage' || col === 'language') {
         return LANGUAGE_LABELS[raw] || titleizeValue(String(raw));
@@ -321,7 +331,11 @@
         .map((l) => {
           const cells = COLS.map((c) => {
             const text = formatCell(c, l);
-            return `<td class="${c === 'description' ? 'desc' : ''}" title="${escapeHtml(text)}">${escapeHtml(text)}</td>`;
+            const safe = escapeHtml(text);
+            const content = c === 'qualification' && text
+              ? `<span class="qual qual-${escapeHtml(String(l.qualification || ''))}">${safe}</span>`
+              : safe;
+            return `<td class="${c === 'description' ? 'desc' : ''}" title="${safe}">${content}</td>`;
           }).join('');
           return `<tr class="${selected.has(l.id) ? 'selected' : ''}" data-row="${l.id}">${cells}</tr>`;
         })

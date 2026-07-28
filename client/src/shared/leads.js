@@ -30,6 +30,13 @@ function sanitizeFields(input) {
     medicalTreatment: input.medicalTreatment ? String(input.medicalTreatment).trim().slice(0, 20) : null,
     hasAttorney: input.hasAttorney ? String(input.hasAttorney).trim().slice(0, 20) : null,
     accidentRole: input.accidentRole ? String(input.accidentRole).trim().slice(0, 20) : null,
+    injuredAtWork: input.injuredAtWork ? String(input.injuredAtWork).trim().slice(0, 20) : null,
+    reportedToEmployer: input.reportedToEmployer ? String(input.reportedToEmployer).trim().slice(0, 20) : null,
+    lostWages: input.lostWages ? String(input.lostWages).trim().slice(0, 20) : null,
+    hasEvidence: input.hasEvidence ? String(input.hasEvidence).trim().slice(0, 20) : null,
+    immigrationCaseType: input.immigrationCaseType ? String(input.immigrationCaseType).trim().slice(0, 40) : null,
+    hasDeadline: input.hasDeadline ? String(input.hasDeadline).trim().slice(0, 20) : null,
+    inUs: input.inUs ? String(input.inUs).trim().slice(0, 20) : null,
   };
 }
 
@@ -74,6 +81,13 @@ const CAMEL_TO_COL = {
   medicalTreatment: 'medical_treatment',
   hasAttorney: 'has_attorney',
   accidentRole: 'accident_role',
+  injuredAtWork: 'injured_at_work',
+  reportedToEmployer: 'reported_to_employer',
+  lostWages: 'lost_wages',
+  hasEvidence: 'has_evidence',
+  immigrationCaseType: 'immigration_case_type',
+  hasDeadline: 'has_deadline',
+  inUs: 'in_us',
 };
 
 export function buildLeadRow(input) {
@@ -131,6 +145,13 @@ export function rowToLead(row) {
     medicalTreatment: row.medical_treatment,
     hasAttorney: row.has_attorney,
     accidentRole: row.accident_role,
+    injuredAtWork: row.injured_at_work,
+    reportedToEmployer: row.reported_to_employer,
+    lostWages: row.lost_wages,
+    hasEvidence: row.has_evidence,
+    immigrationCaseType: row.immigration_case_type,
+    hasDeadline: row.has_deadline,
+    inUs: row.in_us,
     qualification: row.qualification,
     qualificationScore: row.qualification_score,
   };

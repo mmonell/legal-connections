@@ -1,6 +1,8 @@
 import { LC } from '../config.js';
 import { t, getLang, setLang, LANGS, LANG_META, onLangChange } from '../i18n.js';
 import { usStates } from '../data/usStates.js';
+import { SERVICE_FLOWS, YES_NO, YES_NO_UNSURE, flowForCaseType } from './serviceFlows.js';
+import './lc-chat.js'; // the full-page (non-banner) intake footer uses <lc-chat>
 
 const strings = {
   sub: {
@@ -486,10 +488,17 @@ const CASE_PRESETS = {
 
 class LcAvatar extends HTMLElement {
   connectedCallback() {
-    const preset = CASE_PRESETS[this.getAttribute('case')];
-    // Skip the "were you in an accident" + "what happened" questions when the
-    // service page already told us the answer.
-    this.stepId = this.stepId || (preset ? (preset.branch === 'accident' ? 'when' : 'guidance') : 'accident');
+    const presetKey = this.getAttribute('case');
+    const preset = CASE_PRESETS[presetKey];
+    // Service pages already told us the case type, so skip the "were you in an
+    // accident?" + "what happened?" questions and go straight into that
+    // service's qualifying-question flow (serviceFlows.js). The homepage (no
+    // preset) starts at the accident gate.
+    if (!this.flowSteps) {
+      this.flowSteps = (preset && SERVICE_FLOWS[flowForCaseType(preset.caseType)]) || [];
+      this.qualIndex = 0;
+    }
+    this.stepId = this.stepId || (preset ? (this.flowSteps.length ? 'qualStep' : 'guidance') : 'accident');
     this.branch = this.branch || preset?.branch || null; // 'accident' | 'other'
     this.lead = this.lead || (preset ? { caseType: preset.caseType } : {});
     this.presetTitle = preset?.title || null; // service name shown instead of the tagline
@@ -761,6 +770,15 @@ class LcAvatar extends HTMLElement {
     }
   }
 
+  // Begins the qualifying-question flow for a service (a SERVICE_FLOWS key),
+  // or jumps straight to guidance when the service has no flow. Shared by the
+  // caseType step and by service-page presets that skip the case-type question.
+  startQualFlow(flowKey) {
+    this.flowSteps = (flowKey && SERVICE_FLOWS[flowKey]) || [];
+    this.qualIndex = 0;
+    this.stepId = this.flowSteps.length ? 'qualStep' : 'guidance';
+  }
+
   /* -------- conversation flow -------- */
   advance(value) {
     // Every answer flips the sprites between the logo and the orb.
@@ -774,66 +792,27 @@ class LcAvatar extends HTMLElement {
       case 'caseType':
         this.lead.caseType = value;
         this.save();
-        this.stepId = this.branch === 'accident' ? 'when' : 'guidance';
+        // Pick this service's qualifying-question flow and run it. If the case
+        // type has no flow (e.g. an "other"/miscellaneous choice), skip
+        // straight to guidance as before.
+        this.startQualFlow(flowForCaseType(value));
         break;
-      case 'when':
-        // '0'..'14' days ago becomes a concrete date; anything older is flagged.
-        this.lead.accidentDate = /^\d+$/.test(value)
-          ? new Date(Date.now() - Number(value) * 86400000).toISOString().slice(0, 10)
-          : 'over-14-days';
+      case 'qualStep': {
+        const step = this.flowSteps[this.qualIndex];
+        // The date step stores a concrete YYYY-MM-DD for 0-14 days ago, or the
+        // literal 'over-14-days' flag for anything older.
+        if (step.control === 'dateSelect') {
+          this.lead[step.field] = /^\d+$/.test(value)
+            ? new Date(Date.now() - Number(value) * 86400000).toISOString().slice(0, 10)
+            : 'over-14-days';
+        } else {
+          this.lead[step.field] = value;
+        }
         this.save();
-        this.stepId = 'accidentState';
+        this.qualIndex += 1;
+        this.stepId = this.qualIndex < this.flowSteps.length ? 'qualStep' : 'guidance';
         break;
-      case 'accidentState':
-        this.lead.accidentState = value;
-        this.save();
-        this.stepId = 'role';
-        break;
-      case 'role':
-        this.lead.accidentRole = value;
-        this.save();
-        this.stepId = 'injured';
-        break;
-      case 'injured':
-        this.lead.injured = value;
-        this.save();
-        this.stepId = 'medicalTreatment';
-        break;
-      case 'medicalTreatment':
-        this.lead.medicalTreatment = value;
-        this.save();
-        this.stepId = 'vehicleDamage';
-        break;
-      case 'vehicleDamage':
-        this.lead.vehicleDamage = value;
-        this.save();
-        this.stepId = 'police';
-        break;
-      case 'police':
-        this.lead.policeResponded = value;
-        this.save();
-        this.stepId = 'hasPhotos';
-        break;
-      case 'hasPhotos':
-        this.lead.hasPhotos = value;
-        this.save();
-        this.stepId = 'fault';
-        break;
-      case 'fault':
-        this.lead.faultBelief = value;
-        this.save();
-        this.stepId = 'insurance';
-        break;
-      case 'insurance':
-        this.lead.spokeWithInsurance = value;
-        this.save();
-        this.stepId = 'hasAttorney';
-        break;
-      case 'hasAttorney':
-        this.lead.hasAttorney = value;
-        this.save();
-        this.stepId = 'guidance';
-        break;
+      }
       case 'guidance':
         this.stepId = 'name';
         break;
@@ -903,66 +882,11 @@ class LcAvatar extends HTMLElement {
         break;
       }
 
-      case 'when': {
-        const options = [];
-        for (let n = 0; n <= 14; n++) {
-          const label =
-            n === 0 ? t(strings.whenToday)
-            : n === 1 ? t(strings.whenYesterday)
-            : t(strings.whenDaysAgo).replace('{n}', n);
-          options.push({ value: String(n), label });
-        }
-        options.push({ value: 'over-14', label: t(strings.whenOver14) });
-        show(t(strings.qWhen), () => {
-          this.selectInput(controls, { options, placeholder: t(strings.whenPlaceholder) });
-        });
+      case 'qualStep': {
+        const step = this.flowSteps[this.qualIndex];
+        show(t(step.question), () => this.renderQualControl(controls, step));
         break;
       }
-
-      case 'accidentState': {
-        const options = usStates.map((s) => ({ value: s.code, label: `${s.name} (${s.code})` }));
-        options.push({ value: 'outside-us', label: t(strings.outsideUs) });
-        show(t(strings.qAccidentState), () => {
-          this.selectInput(controls, { options, placeholder: t(strings.accidentStatePlaceholder) });
-        });
-        break;
-      }
-
-      case 'role':
-        show(t(strings.qRole), () => this.chips(controls, strings.roleOptions));
-        break;
-
-      case 'injured':
-        show(t(strings.qInjured), () => this.chips(controls, yesNoUnsure));
-        break;
-
-      case 'medicalTreatment':
-        show(t(strings.qMedicalTreatment), () => this.chips(controls, yesNo));
-        break;
-
-      case 'vehicleDamage':
-        show(t(strings.qVehicleDamage), () => this.chips(controls, yesNoUnsure));
-        break;
-
-      case 'police':
-        show(t(strings.qPolice), () => this.chips(controls, yesNoUnsure));
-        break;
-
-      case 'hasPhotos':
-        show(t(strings.qHasPhotos), () => this.chips(controls, yesNo));
-        break;
-
-      case 'fault':
-        show(t(strings.qFault), () => this.chips(controls, strings.faultOptions));
-        break;
-
-      case 'insurance':
-        show(t(strings.qInsurance), () => this.chips(controls, yesNo));
-        break;
-
-      case 'hasAttorney':
-        show(t(strings.qHasAttorney), () => this.chips(controls, yesNo));
-        break;
 
       case 'guidance': {
         const isAccident = this.branch === 'accident';
@@ -1064,7 +988,10 @@ class LcAvatar extends HTMLElement {
       `;
       controls.querySelector('.skip').addEventListener('click', () => {
         const preset = CASE_PRESETS[this.getAttribute('case')];
-        this.stepId = preset ? (preset.branch === 'accident' ? 'when' : 'guidance') : 'accident';
+        // Restart: re-seed the qualifying flow the same way connectedCallback does.
+        this.flowSteps = (preset && SERVICE_FLOWS[flowForCaseType(preset.caseType)]) || [];
+        this.qualIndex = 0;
+        this.stepId = preset ? (this.flowSteps.length ? 'qualStep' : 'guidance') : 'accident';
         this.branch = preset?.branch || null;
         this.lead = preset ? { caseType: preset.caseType } : {};
         this.leadId = null;
@@ -1073,6 +1000,35 @@ class LcAvatar extends HTMLElement {
         this.showStep();
       });
     });
+  }
+
+  // Renders the control for a data-driven qualifying step (see serviceFlows.js).
+  renderQualControl(controls, step) {
+    if (step.control === 'dateSelect') {
+      const options = [];
+      for (let n = 0; n <= 14; n++) {
+        const label =
+          n === 0 ? t(strings.whenToday)
+          : n === 1 ? t(strings.whenYesterday)
+          : t(strings.whenDaysAgo).replace('{n}', n);
+        options.push({ value: String(n), label });
+      }
+      options.push({ value: 'over-14', label: t(strings.whenOver14) });
+      this.selectInput(controls, { options, placeholder: t(strings.whenPlaceholder) });
+      return;
+    }
+    if (step.control === 'stateSelect') {
+      const options = usStates.map((s) => ({ value: s.code, label: `${s.name} (${s.code})` }));
+      options.push({ value: 'outside-us', label: t(strings.outsideUs) });
+      this.selectInput(controls, { options, placeholder: t(strings.accidentStatePlaceholder) });
+      return;
+    }
+    // chip-based controls: shared yes/no sets, or the step's own options.
+    const options =
+      step.control === 'yesno' ? YES_NO
+      : step.control === 'yesnounsure' ? YES_NO_UNSURE
+      : step.options;
+    this.chips(controls, options);
   }
 
   /* -------- control builders -------- */

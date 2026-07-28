@@ -23,5 +23,6 @@ database_id = "04bc3219-020e-4658-8957-40971c398a9b"
 #   wrangler secret put AWS_SES_SECRET
 #   wrangler secret put AWS_REGION
 #
-# Default sender if CONTACT_SENDER_EMAIL is unset: do-not-reply@legal-connections.com
-# (see test/.env.example and test/src/shared/mailer.js).
+# Default sender if CONTACT_SENDER_EMAIL is unset: do-not-reply@mail.legal-connections.com
+# (see test/.env.example and test/src/shared/mailer.js). Sent from the
+# "mail." subdomain, not the root domain, to isolate sending reputation.

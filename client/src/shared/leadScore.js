@@ -24,15 +24,40 @@ const US_STATES = new Set([
   'VA', 'WA', 'WV', 'WI', 'WY', 'DC', 'PR',
 ]);
 
-function isRecent(accidentDate) {
-  // The intake stores either a concrete YYYY-MM-DD (0-14 days ago, per
-  // lc-avatar) or the literal 'over-14-days'. The static form stores nothing
-  // structured, so absence just doesn't earn the point rather than erroring.
-  if (!accidentDate || accidentDate === 'over-14-days') return false;
-  const date = new Date(accidentDate);
-  if (Number.isNaN(date.getTime())) return false;
-  const days = (Date.now() - date.getTime()) / 86_400_000;
-  return days >= 0 && days <= 14;
+// Days since a stored accident/incident date, or null if unknown/unparseable.
+// The intake stores either a concrete YYYY-MM-DD or the literal 'over-14-days'
+// (a homepage "more than 14 days ago" answer), which counts as not-recent.
+function daysSince(dateStr) {
+  if (!dateStr || dateStr === 'over-14-days') return null;
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return null;
+  return (Date.now() - date.getTime()) / 86_400_000;
+}
+
+function isRecent(accidentDate, windowDays = 14) {
+  const days = daysSince(accidentDate);
+  return days !== null && days >= 0 && days <= windowDays;
+}
+
+// Tier boundaries are shared across every service (per the auto PDF): a lead
+// is HOT at 13+, WARM at 8-12, COLD below 8.
+function tier(score) {
+  return score >= 13 ? 'hot' : score >= 8 ? 'warm' : 'cold';
+}
+
+// Small helper each scorer uses to accumulate points + human-readable reasons.
+function scorer() {
+  let score = 0;
+  const reasons = [];
+  return {
+    add(points, reason) {
+      score += points;
+      reasons.push(`${reason} (+${points})`);
+    },
+    result() {
+      return { score, qualification: tier(score), reasons };
+    },
+  };
 }
 
 function isUsState(value) {
@@ -41,26 +66,73 @@ function isUsState(value) {
   return US_STATES.has(v) || v === 'US' || v === 'USA' || v === 'UNITED STATES';
 }
 
-// Returns { score, qualification: 'hot' | 'warm' | 'cold', reasons: string[] }.
+// All scorers return { score, qualification: 'hot'|'warm'|'cold', reasons: [] }.
 // `lead` uses the same camelCase shape as buildLeadRow()/rowToLead() input.
+
+// AUTO ACCIDENTS — exactly the FORMATO DE CALIFICACIÓN DE LEAD point system.
 export function scoreLead(lead) {
-  let score = 0;
-  const reasons = [];
+  const s = scorer();
+  if (TRAFFIC_ACCIDENT_TYPES.has(lead.caseType)) s.add(3, 'Real traffic accident');
+  if (isRecent(lead.accidentDate, 14)) s.add(3, 'Happened recently (within 14 days)');
+  if (lead.injured === 'yes' || lead.medicalTreatment === 'yes') s.add(3, 'Pain, injury, or received medical care');
+  if (lead.vehicleDamage === 'yes') s.add(2, 'Visible vehicle damage');
+  if (lead.hasPhotos === 'yes' || lead.policeResponded === 'yes') s.add(2, 'Has photos, plates, or a police report');
+  if (lead.hasAttorney === 'no') s.add(2, 'Does not have an attorney yet');
+  if (lead.faultBelief === 'other-driver') s.add(2, 'Caused by the other person');
+  if (isUsState(lead.accidentState)) s.add(2, 'Happened in the United States');
+  return s.result();
+}
 
-  const add = (points, reason) => {
-    score += points;
-    reasons.push(`${reason} (+${points})`);
-  };
+// PERSONAL INJURY — slip/fall, dog bite, malpractice, premises, product, etc.
+const PERSONAL_INJURY_TYPES = new Set([
+  'personal-injury', 'slip-and-fall', 'trip-and-fall', 'premises-liability',
+  'dog-bite', 'defective-products', 'medical-malpractice', 'wrongful-death',
+]);
+export function scorePersonalInjury(lead) {
+  const s = scorer();
+  if (PERSONAL_INJURY_TYPES.has(lead.caseType) || lead.caseType === 'other') s.add(3, 'Valid personal-injury incident');
+  if (isRecent(lead.accidentDate, 30)) s.add(3, 'Happened recently (within 30 days)');
+  if (lead.injured === 'yes' || lead.medicalTreatment === 'yes') s.add(3, 'Injured or received medical care');
+  if (lead.hasEvidence === 'yes' || lead.hasPhotos === 'yes') s.add(2, 'Has photos, report, or witnesses');
+  if (lead.faultBelief === 'other-driver' || lead.faultBelief === 'other-party') s.add(2, 'Someone else at fault');
+  if (lead.hasAttorney === 'no') s.add(2, 'Does not have an attorney yet');
+  if (isUsState(lead.accidentState)) s.add(2, 'Happened in the United States');
+  return s.result();
+}
 
-  if (TRAFFIC_ACCIDENT_TYPES.has(lead.caseType)) add(3, 'Real traffic accident');
-  if (isRecent(lead.accidentDate)) add(3, 'Happened recently (within 14 days)');
-  if (lead.injured === 'yes' || lead.medicalTreatment === 'yes') add(3, 'Pain, injury, or received medical care');
-  if (lead.vehicleDamage === 'yes') add(2, 'Visible vehicle damage');
-  if (lead.hasPhotos === 'yes' || lead.policeResponded === 'yes') add(2, 'Has photos, plates, or a police report');
-  if (lead.hasAttorney === 'no') add(2, 'Does not have an attorney yet');
-  if (lead.faultBelief === 'other-driver') add(2, 'Caused by the other person');
-  if (isUsState(lead.accidentState)) add(2, 'Happened in the United States');
+// WORKERS' COMP — job injuries. Longer recency window (claim windows are long).
+export function scoreWorkersComp(lead) {
+  const s = scorer();
+  if (isRecent(lead.accidentDate, 90)) s.add(3, 'Happened recently (within 90 days)');
+  if (lead.injuredAtWork === 'yes') s.add(3, 'Injured on the job');
+  if (lead.medicalTreatment === 'yes') s.add(3, 'Received medical care');
+  if (lead.reportedToEmployer === 'yes') s.add(2, 'Reported the injury to the employer');
+  if (lead.lostWages === 'yes') s.add(2, 'Missed work or lost wages');
+  if (lead.hasAttorney === 'no') s.add(2, 'Does not have an attorney yet');
+  if (isUsState(lead.accidentState)) s.add(2, 'Happened in the United States');
+  return s.result();
+}
 
-  const qualification = score >= 13 ? 'hot' : score >= 8 ? 'warm' : 'cold';
-  return { score, qualification, reasons };
+// IMMIGRATION — urgency-driven. A pending deadline/court date is the strongest
+// signal, so it carries the most weight.
+const URGENT_IMMIGRATION_TYPES = new Set(['deportation-defense', 'asylum']);
+export function scoreImmigration(lead) {
+  const s = scorer();
+  if (lead.hasDeadline === 'yes') s.add(4, 'Has an upcoming deadline or court date');
+  if (URGENT_IMMIGRATION_TYPES.has(lead.immigrationCaseType)) s.add(3, 'Time-sensitive case (deportation defense or asylum)');
+  if (lead.inUs === 'yes') s.add(2, 'Currently in the United States');
+  if (lead.hasAttorney === 'no') s.add(2, 'Does not have an attorney yet');
+  if (lead.immigrationCaseType && lead.immigrationCaseType !== 'other') s.add(2, 'Valid immigration case type');
+  return s.result();
+}
+
+// Dispatches to the right scorer by the lead's service/case type. Defaults to
+// the auto-accident scorer (the original behavior) for traffic-accident and
+// unknown case types.
+export function scoreLeadForService(lead) {
+  const ct = lead.caseType;
+  if (ct === 'immigration' || lead.immigrationCaseType) return scoreImmigration(lead);
+  if (ct === 'workers-comp') return scoreWorkersComp(lead);
+  if (PERSONAL_INJURY_TYPES.has(ct)) return scorePersonalInjury(lead);
+  return scoreLead(lead);
 }
