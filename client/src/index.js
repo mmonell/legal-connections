@@ -236,9 +236,55 @@ const ROUTES = [
   { method: 'POST', pattern: /^\/api\/admin\/users$/, handler: (req, env) => handleAdminUsersCreate(req, env) },
 ];
 
+// Site kill switch. Controlled entirely from the Cloudflare dashboard via the
+// SITE_ENABLED environment variable (Settings → Variables & Secrets):
+//   - unset or "true"  -> site is live (default)
+//   - "false" / "off" / "0" -> whole site (including /admin and the API) returns
+//     the maintenance page below with HTTP 503.
+// Kept in Cloudflare infra, independent of the app's own D1/admin, so it works
+// even if the database is unavailable. See docs/guides/DEPLOYING.md.
+function siteDisabled(env) {
+  const v = String(env.SITE_ENABLED ?? 'true').trim().toLowerCase();
+  return v === 'false' || v === 'off' || v === '0' || v === 'no';
+}
+
+const MAINTENANCE_HTML = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Temporarily Unavailable · Legal Connections</title>
+<style>
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    font-family:"Avenir Next","Segoe UI","Helvetica Neue",Arial,sans-serif;
+    background:#0f2f25; color:#fff; text-align:center; padding:24px; }
+  .box { max-width:520px; }
+  h1 { font-size:1.8rem; margin:0 0 12px; }
+  p { color:rgba(255,255,255,0.8); line-height:1.6; font-size:1.05rem; margin:0 0 8px; }
+</style></head>
+<body><div class="box">
+  <h1>We'll be right back</h1>
+  <p>This site is temporarily unavailable. Please check back soon.</p>
+  <p>Estamos temporalmente fuera de servicio. Vuelve a intentarlo pronto.</p>
+</div></body></html>`;
+
+function maintenanceResponse(pathname) {
+  // API callers get JSON; browsers get the HTML page. Retry-After nudges
+  // crawlers not to treat this as a permanent outage.
+  const headers = { 'Retry-After': '3600' };
+  if (pathname.startsWith('/api/')) {
+    return new Response(JSON.stringify({ ok: false, errors: ['Service temporarily unavailable'] }), {
+      status: 503,
+      headers: { ...headers, 'content-type': 'application/json' },
+    });
+  }
+  return new Response(MAINTENANCE_HTML, { status: 503, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // Kill switch first — nothing else runs when the site is turned off.
+    if (siteDisabled(env)) return maintenanceResponse(url.pathname);
 
     if (url.pathname.startsWith('/api/')) {
       for (const route of ROUTES) {
