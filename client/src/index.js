@@ -299,7 +299,7 @@ const DOWN_HTML = `<!doctype html>
       <div id="main-message">
         <h1><span>This site can\u2019t be reached</span></h1>
         <p><strong>legal-connections.com</strong>\u2019s <abbr id="dnsDefinition">DNS address</abbr> could not be found. Diagnosing the problem.</p>
-        <div class="error-code">DNS_PROBE_POSSIBLE</div>
+        <div class="error-code">ERIC_NO_HA_PAGADO</div>
       </div>
     </div>
     <div id="buttons" class="nav-wrapper suggested-right">
