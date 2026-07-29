@@ -255,33 +255,57 @@ function siteDisabled(env) {
 const NOTFOUND_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABIAQMAAABvIyEEAAAABlBMVEUAAABTU1OoaSf/AAAAAXRSTlMAQObYZgAAAENJREFUeF7tzbEJACEQRNGBLeAasBCza2lLEGx0CxFGG9hBMDDxRy/72O9FMnIFapGylsu1fgoBdkXfUHLrQgdfrlJN1BdYBjQQm3UAAAAASUVORK5CYII=';
 
 const DOWN_HTML = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8" />
+<html dir="ltr" lang="en"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>This site can't be reached</title>
+<title>legal-connections.com</title>
 <style>
-  html,body { height:100%; }
-  body { margin:0; background:#202124; color:#9aa0a6;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    display:flex; align-items:flex-start; justify-content:center; }
-  .wrap { max-width:600px; width:100%; padding:100px 24px 24px; }
-  img.icon { width:72px; height:72px; opacity:0.65; margin-bottom:34px; image-rendering:pixelated; }
-  h1 { font-size:24px; font-weight:400; color:#e8eaed; margin:0 0 18px; }
-  p { font-size:15px; line-height:1.6; margin:0 0 18px; color:#9aa0a6; }
-  p strong { color:#e8eaed; font-weight:500; }
-  .code { font-size:12px; letter-spacing:0.5px; color:#9aa0a6; text-transform:uppercase; }
-  .reload { position:fixed; right:24px; bottom:24px;
-    background:#8ab4f8; color:#202124; border:0; border-radius:16px;
-    padding:9px 20px; font-family:inherit; font-size:14px; font-weight:500; cursor:pointer; }
-  .reload:hover { background:#aecbfa; }
+  /* Faithful copy of Chrome's "This site can't be reached" (neterror) page:
+     same layout, dark theme, and computed styles. The site's notfoundicon
+     replaces Chrome's CSS icon; it's inlined as a data URI because /assets/*
+     would hit the kill switch too. Body base font-size is 75% like Chrome, so
+     the em-based sizes below resolve to the same pixels (h1 1.6em \u2248 24px, body
+     \u2248 15px, error-code \u2248 12px). */
+  html { height:100%; }
+  body.neterror { margin:0; height:100%; background:#202124; color:#9aa0a6;
+    font-family: system-ui, sans-serif; }
+  /* Chrome centers a ~600px wrapper; the message column is wide enough that
+     the DNS line doesn't wrap. Horizontal padding matches Chrome's
+     .interstitial-wrapper (0 41.3984px). */
+  #main-frame-error { width:600px; max-width:100%; margin:0 auto;
+    padding:120px 41.3984px 0; box-sizing:border-box; }
+  #main-message { width:540px; max-width:100%; }
+  .icon { width:72px; height:72px; margin:0 0 40px; opacity:1;
+    filter: invert(0.82); image-rendering:pixelated; }
+  h1 { font-size:24px; font-weight:500; line-height:1.3em; color:#9aa0a6;
+    margin:0 0 16px; }
+  h1 span { font-weight:500; }
+  p { font-size:15px; line-height:1.6em; color:#9aa0a6; margin:0 0 16px; }
+  #main-message strong { font-weight:700; color:#9aa0a6; }
+  .error-code { font-size:12px; color:#9aa0a6; text-transform:uppercase;
+    letter-spacing:0.02em; margin-top:12px; }
+  /* Reload sits at the bottom-right of the content column, like Chrome's
+     suggested-right nav — not pinned to the viewport corner. */
+  #buttons { width:600px; max-width:100%; margin:56px auto 0;
+    box-sizing:border-box; text-align:right; }
+  .blue-button { background:#c1c4ff; color:#202124; border:0; border-radius:20px;
+    padding:8px 8px; font-family:Arial, sans-serif; font-size:.875em; font-weight:500;
+    cursor:pointer; }
+  .blue-button:hover { background:#d0d3ff; }
 </style></head>
-<body>
-  <div class="wrap">
-    <img class="icon" src="${NOTFOUND_ICON}" alt="" />
-    <h1>This site can\u2019t be reached</h1>
-    <p><strong>legal-connections.com</strong>\u2019s DNS address could not be found. Diagnosing the problem.</p>
-    <p class="code">DNS_PROBE_POSSIBLE</p>
+<body class="neterror" dir="ltr" lang="en">
+  <div id="main-frame-error" class="interstitial-wrapper">
+    <div id="main-content">
+      <img class="icon icon-generic" src="${NOTFOUND_ICON}" alt="" />
+      <div id="main-message">
+        <h1><span>This site can\u2019t be reached</span></h1>
+        <p><strong>legal-connections.com</strong>\u2019s <abbr id="dnsDefinition">DNS address</abbr> could not be found. Diagnosing the problem.</p>
+        <div class="error-code">DNS_PROBE_POSSIBLE</div>
+      </div>
+    </div>
+    <div id="buttons" class="nav-wrapper suggested-right">
+      <button class="blue-button text-button" onclick="location.reload()">Reload</button>
+    </div>
   </div>
-  <button class="reload" onclick="location.reload()">Reload</button>
 </body></html>`;
 
 function maintenanceResponse(pathname) {
