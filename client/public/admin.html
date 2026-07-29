@@ -173,11 +173,31 @@
     let leads = [];
     const selected = new Set();
 
+    // Legacy exact sources (leads created before granular tracking).
     const SOURCE_LABELS = {
-      'avatar-intake': 'Homepage',
-      'whatsapp-chat': 'Whatsapp',
-      'case-evaluation-form': 'Case Evaluation Form',
+      'avatar-intake': 'Homepage - Banner',
+      'whatsapp-chat': 'WhatsApp',
+      'case-evaluation-form': 'Homepage - CTA',
     };
+
+    // Granular sources follow "<page>[-<case>]-<banner|cta>", e.g.
+    // "homepage-banner", "services-auto-accidents-cta". Turn them into
+    // friendly labels like "Services (Auto Accidents) - CTA".
+    const CASE_NAMES = {
+      'auto-accidents': 'Auto Accidents', 'personal-injury': 'Personal Injury',
+      'workers-comp': "Workers' Comp", immigration: 'Immigration',
+    };
+    function formatSource(raw) {
+      if (!raw) return '';
+      if (SOURCE_LABELS[raw]) return SOURCE_LABELS[raw];
+      const m = String(raw).match(/^(homepage|services|landing)-(?:(.+)-)?(banner|cta)$/);
+      if (!m) return titleizeValue(String(raw));
+      const [, page, caseSlug, kind] = m;
+      const pageLabel = page.charAt(0).toUpperCase() + page.slice(1);
+      const kindLabel = kind === 'cta' ? 'CTA' : 'Banner';
+      const caseLabel = caseSlug ? ` (${CASE_NAMES[caseSlug] || titleizeValue(caseSlug)})` : '';
+      return `${pageLabel}${caseLabel} - ${kindLabel}`;
+    }
 
     const LANGUAGE_LABELS = { en: 'English', es: 'Spanish', pt: 'Portuguese' };
 
@@ -216,7 +236,7 @@
       const raw = lead[col];
       if (raw === null || raw === undefined || raw === '') return '';
       if (col === 'qualification') return String(raw).toUpperCase();
-      if (col === 'source') return SOURCE_LABELS[raw] || titleizeValue(String(raw));
+      if (col === 'source') return formatSource(raw);
       if (col === 'preferredLanguage' || col === 'language') {
         return LANGUAGE_LABELS[raw] || titleizeValue(String(raw));
       }

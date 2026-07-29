@@ -2,9 +2,32 @@
 // Column names here are the D1 (snake_case) names; the JSON the browser sends
 // is still camelCase, converted at the edges (buildLeadRow/patchRow).
 
-const CONVERSATIONAL_SOURCES = new Set(['whatsapp-chat', 'avatar-intake']);
-const SOURCES = new Set(['case-evaluation-form', 'whatsapp-chat', 'avatar-intake']);
+// Sources are granular per page + form so leads can be attributed precisely
+// (e.g. "services-auto-accidents-cta"). Rather than enumerate every value, we
+// recognize them by shape:
+//   - "whatsapp-chat"                    -> WhatsApp button
+//   - "<page>-<...>-banner" / "avatar-intake" -> conversational guided intake
+//   - "<page>-<...>-cta" / "case-evaluation-form" -> static form
+// A "conversational" source (the guided intake / WhatsApp) builds the lead
+// progressively, so it relaxes the up-front name/consent/phone requirement.
 const LANGUAGES = new Set(['en', 'es', 'pt']);
+const SOURCE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/; // lowercase, hyphen-separated
+const DEFAULT_SOURCE = 'case-evaluation-form';
+
+function isConversationalSource(source) {
+  return source === 'whatsapp-chat' || source === 'avatar-intake' || /(?:^|-)banner$/.test(String(source || ''));
+}
+
+// A static-form (CTA) lead arrives complete in one POST and can be qualified
+// immediately; conversational sources are qualified later on their final PATCH.
+export function isStaticFormSource(source) {
+  return source === 'case-evaluation-form' || /(?:^|-)cta$/.test(String(source || ''));
+}
+
+function normalizeSource(source) {
+  const s = String(source || '').trim().toLowerCase();
+  return SOURCE_PATTERN.test(s) && s.length <= 60 ? s : DEFAULT_SOURCE;
+}
 
 function sanitizeFields(input) {
   return {
@@ -43,7 +66,7 @@ function sanitizeFields(input) {
 export function validateLead(input) {
   const errors = [];
   if (!input || typeof input !== 'object') return ['Invalid payload'];
-  const conversational = CONVERSATIONAL_SOURCES.has(input.source);
+  const conversational = isConversationalSource(input.source);
   if (!conversational) {
     if (!input.name || !String(input.name).trim()) errors.push('Name is required');
     if (!input.consent) errors.push('Consent is required');
@@ -93,7 +116,7 @@ const CAMEL_TO_COL = {
 export function buildLeadRow(input) {
   const clean = sanitizeFields(input);
   const row = { id: crypto.randomUUID(), received_at: new Date().toISOString(), updated_at: null };
-  row.source = SOURCES.has(input.source) ? input.source : 'case-evaluation-form';
+  row.source = normalizeSource(input.source);
   for (const [camel, col] of Object.entries(CAMEL_TO_COL)) {
     row[col] = col === 'consent' ? (clean[camel] ? 1 : 0) : clean[camel];
   }

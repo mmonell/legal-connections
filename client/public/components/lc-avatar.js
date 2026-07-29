@@ -747,7 +747,12 @@ class LcAvatar extends HTMLElement {
 
   /* -------- progressive save: POST once, PATCH afterwards -------- */
   async save(complete = false) {
-    const payload = { ...this.lead, language: getLang(), source: 'avatar-intake' };
+    // Granular attribution: the page sets a `source` attribute (e.g.
+    // "homepage-banner", "services-auto-accidents-banner"). Falls back to the
+    // generic intake source when unset. Must end in "-banner" so the backend
+    // treats it as conversational (isConversationalSource).
+    const source = this.getAttribute('source') || 'avatar-intake';
+    const payload = { ...this.lead, language: getLang(), source };
     if (complete) payload.intakeComplete = true;
     try {
       if (!this.leadId) {

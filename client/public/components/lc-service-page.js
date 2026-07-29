@@ -167,7 +167,7 @@ class LcServicePage extends HTMLElement {
         @media (max-width: 820px) { lc-service-page .grid { grid-template-columns: 1fr; } }
       </style>
 
-      ${noAvatar ? '' : `<lc-avatar id="evaluation" banner case="${slug}"></lc-avatar>`}
+      ${noAvatar ? '' : `<lc-avatar id="evaluation" banner case="${slug}" source="services-${slug}-banner"></lc-avatar>`}
 
       ${noAvatar ? '<lc-steps></lc-steps>' : ''}
 
@@ -192,7 +192,7 @@ class LcServicePage extends HTMLElement {
         </div>
       </section>
 
-      ${noAvatar ? '' : `<lc-hero service="${slug}"></lc-hero>`}
+      ${noAvatar ? '' : `<lc-hero service="${slug}" source="services-${slug}-cta"></lc-hero>`}
     `;
   }
 }

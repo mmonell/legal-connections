@@ -2,7 +2,7 @@
 // Functions) has no file-based routing — every request comes through this
 // fetch handler, so routes are matched manually here. Route logic itself is
 // unchanged from the old functions/api/** files; only the dispatch differs.
-import { buildLeadPatch, buildLeadRow, rowToLead, validateLead } from './shared/leads.js';
+import { buildLeadPatch, buildLeadRow, isStaticFormSource, rowToLead, validateLead } from './shared/leads.js';
 import { clientIp, json, rateLimited } from './shared/rateLimit.js';
 import {
   bearerToken,
@@ -70,7 +70,7 @@ async function handleLeadsCreate(request, env) {
     // never had a lead to update because this very POST is itself the first
     // save attempt (fallback in lc-avatar.js's finish()), signaled the same
     // way: intakeComplete: true.
-    if (row.source === 'case-evaluation-form' || body.intakeComplete) {
+    if (isStaticFormSource(row.source) || body.intakeComplete) {
       await qualifyAndNotify(env, db, row.id, row);
     }
     return json({ ok: true, id: row.id }, { status: 201 });
@@ -240,7 +240,7 @@ const ROUTES = [
 // SITE_ENABLED environment variable (Settings → Variables & Secrets):
 //   - unset or "true"  -> site is live (default)
 //   - "false" / "off" / "0" -> whole site (including /admin and the API) returns
-//     the maintenance page below with HTTP 503.
+//     a "This site can't be reached" (404) page (DOWN_HTML below).
 // Kept in Cloudflare infra, independent of the app's own D1/admin, so it works
 // even if the database is unavailable. See docs/guides/DEPLOYING.md.
 function siteDisabled(env) {
@@ -248,35 +248,52 @@ function siteDisabled(env) {
   return v === 'false' || v === 'off' || v === '0' || v === 'no';
 }
 
-const MAINTENANCE_HTML = `<!doctype html>
+// The "down" page shown when the kill switch is on — a replica of the
+// browser's "This site can't be reached" screen. The notfoundicon
+// (public/assets/notfoundicon.png) is embedded inline as a data URI because
+// when the site is down, an /assets/* request would hit the kill switch too.
+const NOTFOUND_ICON = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABIAQMAAABvIyEEAAAABlBMVEUAAABTU1OoaSf/AAAAAXRSTlMAQObYZgAAAENJREFUeF7tzbEJACEQRNGBLeAasBCza2lLEGx0CxFGG9hBMDDxRy/72O9FMnIFapGylsu1fgoBdkXfUHLrQgdfrlJN1BdYBjQQm3UAAAAASUVORK5CYII=';
+
+const DOWN_HTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Temporarily Unavailable · Legal Connections</title>
+<title>This site can't be reached</title>
 <style>
-  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
-    font-family:"Avenir Next","Segoe UI","Helvetica Neue",Arial,sans-serif;
-    background:#0f2f25; color:#fff; text-align:center; padding:24px; }
-  .box { max-width:520px; }
-  h1 { font-size:1.8rem; margin:0 0 12px; }
-  p { color:rgba(255,255,255,0.8); line-height:1.6; font-size:1.05rem; margin:0 0 8px; }
+  html,body { height:100%; }
+  body { margin:0; background:#202124; color:#9aa0a6;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display:flex; align-items:flex-start; justify-content:center; }
+  .wrap { max-width:600px; width:100%; padding:100px 24px 24px; }
+  img.icon { width:72px; height:72px; opacity:0.65; margin-bottom:34px; image-rendering:pixelated; }
+  h1 { font-size:24px; font-weight:400; color:#e8eaed; margin:0 0 18px; }
+  p { font-size:15px; line-height:1.6; margin:0 0 18px; color:#9aa0a6; }
+  p strong { color:#e8eaed; font-weight:500; }
+  .code { font-size:12px; letter-spacing:0.5px; color:#9aa0a6; text-transform:uppercase; }
+  .reload { position:fixed; right:24px; bottom:24px;
+    background:#8ab4f8; color:#202124; border:0; border-radius:16px;
+    padding:9px 20px; font-family:inherit; font-size:14px; font-weight:500; cursor:pointer; }
+  .reload:hover { background:#aecbfa; }
 </style></head>
-<body><div class="box">
-  <h1>We'll be right back</h1>
-  <p>This site is temporarily unavailable. Please check back soon.</p>
-  <p>Estamos temporalmente fuera de servicio. Vuelve a intentarlo pronto.</p>
-</div></body></html>`;
+<body>
+  <div class="wrap">
+    <img class="icon" src="${NOTFOUND_ICON}" alt="" />
+    <h1>This site can\u2019t be reached</h1>
+    <p><strong>legal-connections.com</strong>\u2019s DNS address could not be found. Diagnosing the problem.</p>
+    <p class="code">DNS_PROBE_POSSIBLE</p>
+  </div>
+  <button class="reload" onclick="location.reload()">Reload</button>
+</body></html>`;
 
 function maintenanceResponse(pathname) {
-  // API callers get JSON; browsers get the HTML page. Retry-After nudges
-  // crawlers not to treat this as a permanent outage.
-  const headers = { 'Retry-After': '3600' };
+  // Everything gets the "site can't be reached" page (404). API callers get a
+  // matching JSON 404 so they don't try to parse HTML.
   if (pathname.startsWith('/api/')) {
-    return new Response(JSON.stringify({ ok: false, errors: ['Service temporarily unavailable'] }), {
-      status: 503,
-      headers: { ...headers, 'content-type': 'application/json' },
+    return new Response(JSON.stringify({ ok: false, errors: ['Not found'] }), {
+      status: 404,
+      headers: { 'content-type': 'application/json' },
     });
   }
-  return new Response(MAINTENANCE_HTML, { status: 503, headers: { ...headers, 'content-type': 'text/html; charset=utf-8' } });
+  return new Response(DOWN_HTML, { status: 404, headers: { 'content-type': 'text/html; charset=utf-8' } });
 }
 
 export default {

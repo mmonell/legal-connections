@@ -6,7 +6,7 @@ export const LC = {
   phoneDisplay: '(407) 603-3030',
   phoneHref: 'tel:+14076033030',
   whatsappNumber: '17875550123', // TODO real number, digits only with country code
-  email: 'info@legalconnections.com', // TODO real email
+  email: 'contact@legal-connections.com', // TODO real email
   siteUrl: 'https://www.legalconnections.com',
   social: {
     facebook: 'https://www.facebook.com/profile.php?id=61592322682478',

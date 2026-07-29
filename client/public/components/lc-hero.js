@@ -1,6 +1,5 @@
 import { LC } from '../config.js';
 import { t, getLang, onLangChange } from '../i18n.js';
-import { floridaCities, floridaCounties } from '../data/florida.js';
 import { usStates } from '../data/usStates.js';
 import { SERVICE_FLOWS, YES_NO, YES_NO_UNSURE } from './serviceFlows.js';
 
@@ -28,9 +27,9 @@ const strings = {
     lastName: { en: 'Last Name', es: 'Apellido', pt: 'Sobrenome' },
     phone: { en: 'Phone Number', es: 'Número de Teléfono', pt: 'Número de Telefone' },
     email: { en: 'E-mail', es: 'Correo Electrónico', pt: 'E-mail' },
-    city: { en: '- Accident Location (City) -', es: '- Lugar del Accidente (Ciudad) -', pt: '- Local do Acidente (Cidade) -' },
-    county: { en: '- County of Accident -', es: '- Condado del Accidente -', pt: '- Condado do Acidente -' },
-    countySuffix: { en: 'County', es: 'Condado', pt: 'Condado' },
+    city: { en: 'City where it happened', es: 'Ciudad donde ocurrió', pt: 'Cidade onde ocorreu' },
+    cityDisabled: { en: 'Select a state first', es: 'Selecciona un estado primero', pt: 'Selecione um estado primeiro' },
+    cityEnabled: { en: 'City where it happened', es: 'Ciudad donde ocurrió', pt: 'Cidade onde ocorreu' },
     preferredLanguage: { en: '- Preferred Language -', es: '- Idioma Preferido -', pt: '- Idioma Preferido -' },
     languages: [
       { value: 'en', label: { en: 'English', es: 'English (Inglés)', pt: 'English (Inglês)' } },
@@ -80,6 +79,7 @@ const strings = {
       { value: 'weight-loss-drug', label: { en: 'Weight Loss Drug', es: 'Medicamento para Perder Peso', pt: 'Medicamento para Emagrecer' } },
     ],
     describe: { en: 'Please describe what happened', es: 'Por favor describe lo que pasó', pt: 'Por favor, descreva o que aconteceu' },
+    accidentState: { en: '- State Where It Happened -', es: '- Estado Donde Ocurrió -', pt: '- Estado Onde Ocorreu -' },
     outsideUs: { en: 'Outside the United States', es: 'Fuera de Estados Unidos', pt: 'Fora dos Estados Unidos' },
     whenToday: { en: 'Today', es: 'Hoy', pt: 'Hoje' },
     whenYesterday: { en: 'Yesterday', es: 'Ayer', pt: 'Ontem' },
@@ -261,14 +261,12 @@ class LcHero extends HTMLElement {
                 <input name="email" type="email" autocomplete="email" placeholder="${t(f.email)}" aria-label="${t(f.email)}" />
               </div>
               <div class="row">
-                <select name="city" aria-label="${t(f.city)}">
-                  <option value="" selected disabled>${t(f.city)}</option>
-                  ${floridaCities.map((c) => `<option value="${c}">${c}</option>`).join('')}
+                <select name="accidentState" aria-label="${t(f.accidentState)}">
+                  <option value="" selected disabled>${t(f.accidentState)}</option>
+                  ${usStates.map((s) => `<option value="${s.code}">${s.name} (${s.code})</option>`).join('')}
+                  <option value="outside-us">${t(f.outsideUs)}</option>
                 </select>
-                <select name="county" aria-label="${t(f.county)}">
-                  <option value="" selected disabled>${t(f.county)}</option>
-                  ${floridaCounties.map((c) => `<option value="${c}">${c} ${t(f.countySuffix)}</option>`).join('')}
-                </select>
+                <input name="city" type="text" disabled autocomplete="address-level2" placeholder="${t(f.cityDisabled)}" aria-label="${t(f.city)}" />
               </div>
               <div class="row">
                 <select name="caseType" required aria-label="${t(f.caseType)}">
@@ -281,7 +279,7 @@ class LcHero extends HTMLElement {
                   ${f.languages.map((l) => `<option value="${l.value}">${t(l.label)}</option>`).join('')}
                 </select>
               </div>
-              ${this.qualFieldsHtml(flowKey)}
+              ${this.qualFieldsHtml(flowKey, { skip: ['accidentState'] })}
               <textarea name="description" placeholder="${t(f.describe)}" aria-label="${t(f.describe)}"></textarea>
               <div class="legal">
                 <p>${t(f.legal1)}</p>
@@ -295,13 +293,29 @@ class LcHero extends HTMLElement {
       </section>
     `;
     this.querySelector('form').addEventListener('submit', (e) => this.submit(e));
+
+    // City is a free-text box disabled until a state is chosen (cities vary by
+    // state, so asking for one before the state is meaningless). Enabling on
+    // state selection keeps it simple without a 50-state city dataset.
+    const stateSel = this.querySelector('select[name="accidentState"]');
+    const cityInput = this.querySelector('input[name="city"]');
+    if (stateSel && cityInput) {
+      stateSel.addEventListener('change', () => {
+        const chosen = stateSel.value && stateSel.value !== 'outside-us';
+        cityInput.disabled = !chosen;
+        cityInput.placeholder = chosen ? t(strings.form.cityEnabled) : t(strings.form.cityDisabled);
+        if (!chosen) cityInput.value = '';
+      });
+    }
   }
 
   // Renders this service's qualifying questions (serviceFlows.js) as form
   // selects, so the static form captures the SAME fields as the guided intake
   // and a completed form scores identically. Returns rows of two selects each.
-  qualFieldsHtml(flowKey) {
-    const steps = SERVICE_FLOWS[flowKey] || [];
+  // `skip` excludes fields already rendered as fixed inputs above (e.g.
+  // accidentState, which sits next to City).
+  qualFieldsHtml(flowKey, { skip = [] } = {}) {
+    const steps = (SERVICE_FLOWS[flowKey] || []).filter((s) => !skip.includes(s.field));
     const optionsFor = (step) => {
       if (step.control === 'dateSelect') {
         const opts = [];
@@ -355,7 +369,11 @@ class LcHero extends HTMLElement {
       name: `${(firstName || '').trim()} ${(lastName || '').trim()}`.trim(),
       language: getLang(),
       consent: true, // consent is granted by submitting; legalese shown above the button
-      source: 'case-evaluation-form',
+      // Granular attribution: the page sets a `source` attribute (e.g.
+      // "homepage-cta", "services-auto-accidents-cta"). Falls back to the
+      // generic form source when unset. Must end in "-cta" so the backend
+      // treats it as a static form (isStaticFormSource).
+      source: this.getAttribute('source') || 'case-evaluation-form',
     };
 
     // The date select stores "days ago" (0-14) or the 'over-14' flag; convert

@@ -38,16 +38,17 @@ class LcHeader extends HTMLElement {
           background: ${noNav ? 'transparent' : 'var(--lc-black)'}; color: var(--lc-white);
         }
         lc-header .inner {
-          display: flex; align-items: center; gap: 24px;
-          padding: 12px 20px; max-width: var(--lc-max); margin: 0 auto;
+          display: flex; align-items: center; gap: 20px;
+          padding: 12px 24px; max-width: 1320px; margin: 0 auto;
         }
-        lc-header img.logo { height: 44px; width: auto; }
-        lc-header nav { display: flex; gap: 20px; }
+        lc-header img.logo { height: 44px; width: auto; flex-shrink: 0; }
+        lc-header nav { display: flex; gap: 18px; }
         lc-header nav a {
           color: rgba(255,255,255,0.85); text-decoration: none; font-weight: 600; font-size: 0.95rem;
+          white-space: nowrap; /* keep each label (e.g. "Accidentes de Auto") on one line */
         }
         lc-header nav a:hover { color: var(--lc-white); }
-        lc-header .right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        lc-header .right { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-shrink: 0; }
         lc-header .lang-wrap { position: relative; }
         lc-header .lang {
           display: flex; align-items: center; gap: 6px;
