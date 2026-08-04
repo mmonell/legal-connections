@@ -9,6 +9,8 @@ const strings = {
   },
   contact: { en: 'Contact', es: 'Contacto', pt: 'Contato' },
   rights: { en: 'All rights reserved.', es: 'Todos los derechos reservados.', pt: 'Todos os direitos reservados.' },
+  privacy: { en: 'Privacy Policy', es: 'Política de Privacidad', pt: 'Política de Privacidade' },
+  terms: { en: 'Terms of Use', es: 'Términos de Uso', pt: 'Termos de Uso' },
 };
 
 class LcFooter extends HTMLElement {
@@ -31,6 +33,9 @@ class LcFooter extends HTMLElement {
           border-top: 1px solid rgba(255,255,255,0.15);
           margin-top: 28px; padding-top: 20px;
         }
+        lc-footer .legal-links { margin-top: 16px; font-size: 0.9rem; }
+        lc-footer .legal-links a { color: var(--lc-white); text-decoration: none; font-weight: 600; }
+        lc-footer .legal-links a:hover { text-decoration: underline; }
         lc-footer .rights { font-size: 0.82rem; margin-top: 14px; }
       </style>
       <footer class="foot">
@@ -41,6 +46,10 @@ class LcFooter extends HTMLElement {
             <strong>${t(strings.contact)}:</strong>
             <a href="${LC.phoneHref}">${LC.phoneDisplay}</a> ·
             <a href="mailto:${LC.email}">${LC.email}</a>
+          </div>
+          <div class="legal-links">
+            <a href="/privacy">${t(strings.privacy)}</a> ·
+            <a href="/terms">${t(strings.terms)}</a>
           </div>
           <div class="disclaimer">${t(strings.disclaimer)}</div>
           <div class="rights">© ${year} ${LC.brandName}. ${t(strings.rights)}</div>

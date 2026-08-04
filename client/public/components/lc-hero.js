@@ -91,9 +91,9 @@ const strings = {
       pt: 'Ao enviar meu número de telefone acima, autorizo a Legal Connections, e seus prestadores de serviço, a me contatar por ligação, mensagem de texto ou WhatsApp no número informado. O consentimento não é uma condição para receber serviços. A frequência de mensagens varia. Podem ser aplicadas tarifas de mensagem e dados. Ao receber qualquer mensagem, responda STOP para cancelar.',
     },
     legal2: {
-      en: 'By submitting this form, you agree to our Terms & acknowledge our privacy policy.',
-      es: 'Al enviar este formulario, aceptas nuestros Términos y reconoces nuestra política de privacidad.',
-      pt: 'Ao enviar este formulário, você concorda com nossos Termos e reconhece nossa política de privacidade.',
+      en: 'By submitting this form, you agree to our <a href="/terms">Terms of Use</a> &amp; acknowledge our <a href="/privacy">Privacy Policy</a>.',
+      es: 'Al enviar este formulario, aceptas nuestros <a href="/terms">Términos de Uso</a> y reconoces nuestra <a href="/privacy">Política de Privacidad</a>.',
+      pt: 'Ao enviar este formulário, você concorda com nossos <a href="/terms">Termos de Uso</a> e reconhece nossa <a href="/privacy">Política de Privacidade</a>.',
     },
     submit: { en: 'See if you qualify', es: 'Mira si calificas', pt: 'Veja se você qualifica' },
     sending: { en: 'Sending…', es: 'Enviando…', pt: 'Enviando…' },
@@ -224,6 +224,7 @@ class LcHero extends HTMLElement {
         lc-hero .card textarea { min-height: 96px; resize: vertical; }
         lc-hero .legal { font-size: 0.72rem; line-height: 1.5; color: rgba(255,255,255,0.6); margin: 4px 0 14px; }
         lc-hero .legal p { margin: 0 0 8px; }
+        lc-hero .legal a { color: rgba(255,255,255,0.9); text-decoration: underline; }
         lc-hero .card button[type=submit] { width: 100%; }
         lc-hero .msg { margin-top: 12px; font-weight: 700; font-size: 0.92rem; }
         lc-hero .msg.ok { color: #7ee2a0; }

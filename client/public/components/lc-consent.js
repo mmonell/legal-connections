@@ -62,7 +62,7 @@ class LcConsent extends HTMLElement {
         @media (max-width: 640px) { lc-consent .bar { flex-direction: column; text-align: center; } }
       </style>
       <div class="bar" role="dialog" aria-label="Cookie consent" aria-live="polite">
-        <p>${t(strings.message)}</p>
+        <p>${t(strings.message)} <a href="/privacy">${t(strings.privacy)}</a></p>
         <div class="actions">
           <button type="button" class="decline">${t(strings.decline)}</button>
           <button type="button" class="accept">${t(strings.accept)}</button>
