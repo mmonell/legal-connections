@@ -34,7 +34,7 @@ export const LEGAL_META = {
   updated: { en: 'Last updated', es: 'Última actualización', pt: 'Última atualização' },
   // TODO: set to the real launch date when these go live.
   effectiveDate: { en: 'August 3, 2026', es: '3 de agosto de 2026', pt: '3 de agosto de 2026' },
-  updatedDate: { en: 'August 3, 2026', es: '3 de agosto de 2026', pt: '3 de agosto de 2026' },
+  updatedDate: { en: 'August 14, 2026', es: '14 de agosto de 2026', pt: '14 de agosto de 2026' },
   contents: { en: 'Contents', es: 'Contenido', pt: 'Conteúdo' },
   contactHeading: { en: 'How to reach us', es: 'Cómo contactarnos', pt: 'Como falar conosco' },
   contactBody: {
@@ -214,6 +214,45 @@ const privacy = {
           en: 'The WhatsApp chat on this site is operated by us but delivered over WhatsApp, which is provided by Meta. Messages you send there are also subject to WhatsApp’s own privacy policy.',
           es: 'El chat de WhatsApp en este sitio lo operamos nosotros pero se entrega a través de WhatsApp, provisto por Meta. Los mensajes que envíes allí también están sujetos a la propia política de privacidad de WhatsApp.',
           pt: 'O chat do WhatsApp neste site é operado por nós, mas entregue pelo WhatsApp, fornecido pela Meta. As mensagens que você envia lá também estão sujeitas à política de privacidade do próprio WhatsApp.',
+        },
+      ],
+    },
+    {
+      heading: {
+        en: 'Legal Connections – SMS Consent Disclosure',
+        es: 'Legal Connections – Divulgación de Consentimiento para SMS',
+        pt: 'Legal Connections – Divulgação de Consentimento para SMS',
+      },
+      body: [
+        {
+          en: 'During a telephone conversation, Legal Connections may request the user’s authorization to communicate with them via SMS/text messages related to their inquiry, communications about their case, requested information, follow-ups, and other communications related to the services they are seeking.',
+          es: 'Durante una conversación telefónica, Legal Connections podrá solicitar al usuario autorización para comunicarse con él mediante mensajes SMS/texto relacionados con su consulta, comunicaciones sobre su caso, información solicitada, seguimientos y otras comunicaciones relacionadas con los servicios que está buscando.',
+          pt: 'Durante uma conversa telefônica, a Legal Connections poderá solicitar ao usuário autorização para comunicar-se com ele por meio de mensagens SMS/texto relacionadas à sua consulta, comunicações sobre seu caso, informações solicitadas, acompanhamentos e outras comunicações relacionadas aos serviços que está buscando.',
+        },
+        {
+          en: 'The user is informed that message frequency may vary depending on the nature and frequency of the conversation, and that standard message and data rates from their mobile carrier may apply.',
+          es: 'Se le informa al usuario que la frecuencia de los mensajes puede variar dependiendo de la naturaleza y frecuencia de la conversación, y que pueden aplicar las tarifas estándar de mensajes y datos de su operador móvil.',
+          pt: 'O usuário é informado de que a frequência das mensagens pode variar dependendo da natureza e frequência da conversa, e que podem ser aplicadas as tarifas padrão de mensagens e dados da sua operadora móvel.',
+        },
+        {
+          en: 'The user is also informed that they may stop receiving text messages at any time by replying <strong>STOP</strong>, and may request help by replying <strong>HELP</strong>.',
+          es: 'También se le informa que puede dejar de recibir mensajes de texto en cualquier momento respondiendo <strong>STOP</strong>, y puede solicitar ayuda respondiendo <strong>HELP</strong>.',
+          pt: 'O usuário também é informado de que pode parar de receber mensagens de texto a qualquer momento respondendo <strong>STOP</strong>, e pode solicitar ajuda respondendo <strong>HELP</strong>.',
+        },
+        {
+          en: 'Legal Connections will not sell, rent, or transfer the user’s personal information to third parties for those third parties’ own marketing purposes. Personal information may only be shared when necessary to provide the requested services, to facilitate a legal referral or connection authorized by the user, to comply with applicable laws, or as set out in our Privacy Policy.',
+          es: 'Legal Connections no venderá, alquilará ni transferirá la información personal del usuario a terceros para fines de marketing propios de dichos terceros. La información personal únicamente podrá compartirse cuando sea necesario para prestar los servicios solicitados, facilitar una referencia o conexión legal autorizada por el usuario, cumplir con las leyes aplicables o conforme a lo establecido en nuestra Política de Privacidad.',
+          pt: 'A Legal Connections não venderá, alugará nem transferirá as informações pessoais do usuário a terceiros para fins de marketing próprios desses terceiros. As informações pessoais somente poderão ser compartilhadas quando necessário para prestar os serviços solicitados, viabilizar uma indicação ou conexão jurídica autorizada pelo usuário, cumprir as leis aplicáveis ou conforme estabelecido em nossa Política de Privacidade.',
+        },
+        {
+          en: 'The first SMS message sent after obtaining consent will include the corresponding text-messaging disclosures and the instructions for cancelling future messages. After this initial message, subsequent communications may be conversational in nature and will be related to the inquiry or the services requested by the user.',
+          es: 'El primer mensaje SMS enviado después de obtener el consentimiento incluirá las divulgaciones correspondientes sobre mensajes de texto y las instrucciones para cancelar futuros mensajes. Después de este mensaje inicial, las comunicaciones posteriores podrán ser de carácter conversacional y estarán relacionadas con la consulta o los servicios solicitados por el usuario.',
+          pt: 'A primeira mensagem SMS enviada após a obtenção do consentimento incluirá as divulgações correspondentes sobre mensagens de texto e as instruções para cancelar mensagens futuras. Após essa mensagem inicial, as comunicações posteriores poderão ser de caráter conversacional e estarão relacionadas à consulta ou aos serviços solicitados pelo usuário.',
+        },
+        {
+          en: 'For more information about how Legal Connections collects, uses, and protects personal information, please see the Privacy Policy available on our website.',
+          es: 'Para obtener más información sobre cómo Legal Connections recopila, utiliza y protege la información personal, consulte la Política de Privacidad disponible en nuestro sitio web.',
+          pt: 'Para obter mais informações sobre como a Legal Connections coleta, utiliza e protege as informações pessoais, consulte a Política de Privacidade disponível em nosso site.',
         },
       ],
     },
