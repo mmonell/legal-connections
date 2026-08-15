@@ -5,9 +5,9 @@ export const LC = {
   tagline: { en: 'Connected by Trust', es: 'Conectados por la Confianza', pt: 'Conectados pela Confiança' },
   phoneDisplay: '(407) 603-3030',
   phoneHref: 'tel:+14076033030',
-  whatsappNumber: '17875550123', // TODO real number, digits only with country code
+  whatsappNumber: '14076033030', // TODO real number, digits only with country code
   email: 'contact@legal-connections.com', // TODO real email
-  siteUrl: 'https://www.legalconnections.com',
+  siteUrl: 'https://www.legal-connections.com',
   social: {
     facebook: 'https://www.facebook.com/profile.php?id=61592322682478',
     instagram: 'https://instagram.com/legalconnections.us', // TODO real handle
