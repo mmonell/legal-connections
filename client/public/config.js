@@ -32,3 +32,10 @@ export const LC = {
 // Used in the footer and in the legal documents.
 export const addressLine = () =>
   `${LC.address.street}, ${LC.address.city}, ${LC.address.state} ${LC.address.zip}`;
+
+// Google Maps link for the address above. Works on desktop and hands off to the
+// native maps app on iOS/Android.
+export const addressHref = () =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    `${addressLine()}, ${LC.address.country}`,
+  )}`;

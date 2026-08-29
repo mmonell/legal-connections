@@ -1,4 +1,4 @@
-import { LC, addressLine } from '../config.js';
+import { LC, addressLine, addressHref } from '../config.js';
 import { t, onLangChange } from '../i18n.js';
 import { LEGAL_DOCS, LEGAL_META } from './legalDocs.js';
 
@@ -116,7 +116,7 @@ class LcLegalPage extends HTMLElement {
           </p>
           <address class="entity-address">
             ${LC.brandName}<br />
-            ${addressLine()}
+            <a href="${addressHref()}" target="_blank" rel="noopener">${addressLine()}</a>
           </address>
         </div>
         <p class="other-doc">

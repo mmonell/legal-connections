@@ -1,4 +1,4 @@
-import { LC, addressLine } from '../config.js';
+import { LC, addressLine, addressHref } from '../config.js';
 import { t, onLangChange } from '../i18n.js';
 
 const strings = {
@@ -31,6 +31,8 @@ class LcFooter extends HTMLElement {
         lc-footer .contact a { color: var(--lc-white); text-decoration: none; font-weight: 600; }
         lc-footer .address { margin-top: 8px; font-style: normal; }
         lc-footer .address strong { color: rgba(255,255,255,0.7); }
+        lc-footer .address a { color: var(--lc-white); text-decoration: none; font-weight: 600; }
+        lc-footer .address a:hover { text-decoration: underline; }
         lc-footer .disclaimer {
           font-size: 0.82rem; line-height: 1.6; max-width: 60em;
           border-top: 1px solid rgba(255,255,255,0.15);
@@ -52,7 +54,7 @@ class LcFooter extends HTMLElement {
           </div>
           <address class="address">
             <strong>${t(strings.address)}:</strong>
-            <span>${addressLine()}</span>
+            <a href="${addressHref()}" target="_blank" rel="noopener">${addressLine()}</a>
           </address>
           <div class="legal-links">
             <a href="/privacy">${t(strings.privacy)}</a> ·
