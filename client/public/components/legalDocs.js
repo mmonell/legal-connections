@@ -19,12 +19,15 @@
 // registered entity name, mailing address, and governing state, and have
 // counsel review both documents.
 
-import { LC } from '../config.js';
+import { LC, addressLine } from '../config.js';
 
-// TODO: real registered entity name, mailing address, and governing state.
+// TODO: real registered entity name and governing state.
+// The address comes from LC.address in config.js — the single source of truth
+// that also feeds the footer. It must match the address registered with the SMS
+// messaging partner (Ooma) character for character.
 const LEGAL_ENTITY = {
   name: 'Legal Connections LLC', // TODO confirm registered legal name
-  address: '[TODO: street address, city, state, ZIP]',
+  address: addressLine(),
   state: { en: 'Florida', es: 'Florida', pt: 'Flórida' }, // TODO confirm governing state
 };
 
@@ -243,6 +246,14 @@ const privacy = {
           en: 'Legal Connections will not sell, rent, or transfer the user’s personal information to third parties for those third parties’ own marketing purposes. Personal information may only be shared when necessary to provide the requested services, to facilitate a legal referral or connection authorized by the user, to comply with applicable laws, or as set out in our Privacy Policy.',
           es: 'Legal Connections no venderá, alquilará ni transferirá la información personal del usuario a terceros para fines de marketing propios de dichos terceros. La información personal únicamente podrá compartirse cuando sea necesario para prestar los servicios solicitados, facilitar una referencia o conexión legal autorizada por el usuario, cumplir con las leyes aplicables o conforme a lo establecido en nuestra Política de Privacidad.',
           pt: 'A Legal Connections não venderá, alugará nem transferirá as informações pessoais do usuário a terceiros para fins de marketing próprios desses terceiros. As informações pessoais somente poderão ser compartilhadas quando necessário para prestar os serviços solicitados, viabilizar uma indicação ou conexão jurídica autorizada pelo usuário, cumprir as leis aplicáveis ou conforme estabelecido em nossa Política de Privacidade.',
+        },
+        {
+          // Verbatim clause required by the SMS messaging partner (Ooma). The
+          // English text must stay literal — do not reword, reflow, or edit it.
+          // The ES/PT versions are courtesy translations only.
+          en: '<strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong>',
+          es: '<strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong><br />(Traducción: ninguna información móvil será compartida con terceros ni afiliados con fines de marketing o promocionales. Todas las categorías anteriores excluyen los datos de consentimiento y opt-in del originador de mensajes de texto; esta información no será compartida con ningún tercero.)',
+          pt: '<strong>No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</strong><br />(Tradução: nenhuma informação móvel será compartilhada com terceiros ou afiliados para fins de marketing ou promocionais. Todas as categorias acima excluem os dados de consentimento e opt-in do originador de mensagens de texto; essas informações não serão compartilhadas com nenhum terceiro.)',
         },
         {
           en: 'The first SMS message sent after obtaining consent will include the corresponding text-messaging disclosures and the instructions for cancelling future messages. After this initial message, subsequent communications may be conversational in nature and will be related to the inquiry or the services requested by the user.',

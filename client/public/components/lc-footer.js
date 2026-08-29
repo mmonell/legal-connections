@@ -1,4 +1,4 @@
-import { LC } from '../config.js';
+import { LC, addressLine } from '../config.js';
 import { t, onLangChange } from '../i18n.js';
 
 const strings = {
@@ -8,6 +8,7 @@ const strings = {
     pt: 'Legal Connections é uma rede de indicações jurídicas, não um escritório de advocacia, e não presta consultoria jurídica. Enviar informações não cria uma relação advogado–cliente. Os resultados nunca são garantidos.',
   },
   contact: { en: 'Contact', es: 'Contacto', pt: 'Contato' },
+  address: { en: 'Address', es: 'Dirección', pt: 'Endereço' },
   rights: { en: 'All rights reserved.', es: 'Todos los derechos reservados.', pt: 'Todos os direitos reservados.' },
   privacy: { en: 'Privacy Policy', es: 'Política de Privacidad', pt: 'Política de Privacidade' },
   terms: { en: 'Terms of Use', es: 'Términos de Uso', pt: 'Termos de Uso' },
@@ -28,6 +29,8 @@ class LcFooter extends HTMLElement {
         lc-footer img.logo { height: auto; width: 150px; margin-bottom: 18px; }
         lc-footer .tagline { color: var(--lc-white); font-weight: 700; margin-bottom: 24px; }
         lc-footer .contact a { color: var(--lc-white); text-decoration: none; font-weight: 600; }
+        lc-footer .address { margin-top: 8px; font-style: normal; }
+        lc-footer .address strong { color: rgba(255,255,255,0.7); }
         lc-footer .disclaimer {
           font-size: 0.82rem; line-height: 1.6; max-width: 60em;
           border-top: 1px solid rgba(255,255,255,0.15);
@@ -47,6 +50,10 @@ class LcFooter extends HTMLElement {
             <a href="${LC.phoneHref}">${LC.phoneDisplay}</a> ·
             <a href="mailto:${LC.email}">${LC.email}</a>
           </div>
+          <address class="address">
+            <strong>${t(strings.address)}:</strong>
+            <span>${addressLine()}</span>
+          </address>
           <div class="legal-links">
             <a href="/privacy">${t(strings.privacy)}</a> ·
             <a href="/terms">${t(strings.terms)}</a>

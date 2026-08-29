@@ -1,4 +1,4 @@
-import { LC } from '../config.js';
+import { LC, addressLine } from '../config.js';
 import { t, onLangChange } from '../i18n.js';
 import { LEGAL_DOCS, LEGAL_META } from './legalDocs.js';
 
@@ -90,6 +90,7 @@ class LcLegalPage extends HTMLElement {
         }
         lc-legal-page .contact-box h2 { color: var(--lc-white); }
         lc-legal-page .contact-box a { color: #7fd4bc; }
+        lc-legal-page .entity-address { font-style: normal; margin-top: 12px; line-height: 1.6; }
         lc-legal-page .other-doc { margin-top: 28px; font-size: 0.95rem; }
         @media (max-width: 640px) { lc-legal-page .toc ol { columns: 1; } }
       </style>
@@ -113,6 +114,10 @@ class LcLegalPage extends HTMLElement {
             <a href="mailto:${LC.email}">${LC.email}</a><br />
             <a href="${LC.phoneHref}">${LC.phoneDisplay}</a>
           </p>
+          <address class="entity-address">
+            ${LC.brandName}<br />
+            ${addressLine()}
+          </address>
         </div>
         <p class="other-doc">
           <a href="${key === 'privacy' ? '/terms' : '/privacy'}">
