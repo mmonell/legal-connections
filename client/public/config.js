@@ -11,12 +11,11 @@ export const LC = {
   // required by the SMS messaging partner (Ooma) to verify that the address and
   // phone number belong to the business. Must match the address registered with
   // Ooma character for character.
-  // TODO: replace with the real registered street address before launch.
   address: {
-    street: '123 Test Dr.',
-    city: 'Orlando',
-    state: 'FL',
-    zip: '32828',
+    street: '478 E. Altamonte Dr. Suite 108',
+    city: 'Altamonte Springs',
+    state: 'Florida',
+    zip: '32701',
     country: 'USA',
   },
   siteUrl: 'https://www.legal-connections.com',
@@ -28,7 +27,7 @@ export const LC = {
   },
 };
 
-// One-line address string, e.g. "123 Test Dr., Orlando, FL 32828".
+// One-line address string, e.g. "478 E. Altamonte Dr. Suite 108, Altamonte Springs, Florida 32701".
 // Used in the footer and in the legal documents.
 export const addressLine = () =>
   `${LC.address.street}, ${LC.address.city}, ${LC.address.state} ${LC.address.zip}`;
